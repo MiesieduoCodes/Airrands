@@ -4,26 +4,82 @@
     "slug": "Airrands",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/App-icon.png",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/App-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.airrands.app",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/App-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.airrands.app",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Airrands to use your location to show nearby stores and runners."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/App-icon.png",
+          "color": "#ffffff",
+          "sounds": [
+            "./assets/notification-sound.wav"
+          ]
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Airrands to access your photos to upload profile pictures and product images."
+        }
+      ]
+    ],
+    "extra": {
+      "FIREBASE_API_KEY": "AIzaSyC8y7Nv-8355IEu7RhrWuhsyucZh6YyNc8",
+      "FIREBASE_AUTH_DOMAIN": "airands-apk.firebaseapp.com",
+      "FIREBASE_DATABASE_URL": "https://airands-apk-default-rtdb.europe-west1.firebasedatabase.app",
+      "FIREBASE_PROJECT_ID": "airands-apk",
+      "FIREBASE_STORAGE_BUCKET": "airands-apk.firebasestorage.app",
+      "FIREBASE_MESSAGING_SENDER_ID": "973554900024",
+      "FIREBASE_APP_ID": "1:973554900024:web:0a2746c5599f45640f1acd",
+      "FIREBASE_MEASUREMENT_ID": "G-QJCXMG81J8",
+      "PAYSTACK_PUBLIC_KEY": "pk_test_your_paystack_public_key_here",
+      "eas": {
+        "projectId": "14dab307-2aa2-4812-be99-dfc779091400"
+      }
+    },
+    "owner": "miesieduocodes"
   }
 }
