@@ -93,8 +93,8 @@ const ReviewSubmissionScreen: React.FC<ReviewSubmissionScreenProps> = ({
   const validationRules: Record<string, ValidationRule> = {
     rating: {
       required: true,
-      min: 1,
-      max: 5
+      minValue: 1,
+      maxValue: 5
     },
     review: {
       minLength: 10,

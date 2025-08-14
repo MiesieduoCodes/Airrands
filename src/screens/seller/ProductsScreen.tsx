@@ -1674,6 +1674,18 @@ const styles = StyleSheet.create({
   gridProductsList: {
     paddingHorizontal: 8,
   },
+  card: {
+    marginBottom: 12,
+    borderRadius: 16,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
 });
 
 export default ProductsScreen;

@@ -199,3 +199,7 @@ export type RunnerNavigatorProps = {
 export type SellerNavigatorProps = {
   navigation: SellerNavigationProp;
 }; 
+
+export type BuyerNavigatorProps = {
+  navigation: BuyerNavigationProp;
+}; 

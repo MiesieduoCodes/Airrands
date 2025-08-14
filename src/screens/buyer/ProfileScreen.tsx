@@ -232,8 +232,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       
       if (!canAskAgain) {
         // Can't ask again, show settings alert
-        Alert.alert('Permission Required', 'Please enable notifications in your device settings to receive order updates and messages.'[
-            { text: 'Cancel', style: 'cancel' }, { text: 'Settings', onPress: () => {
+        Alert.alert('Permission Required', 'Please enable notifications in your device settings to receive order updates and messages.', [
+            { text: 'Cancel', style: 'cancel' }, 
+            { text: 'Settings', onPress: () => {
               if (Platform.OS === 'ios') {
                 Linking.openURL('app-settings:');
               } else {
@@ -249,8 +250,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       const { status } = await Notifications.requestPermissionsAsync();
       
       if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please enable notifications in your device settings to receive order updates and messages.'[
-            { text: 'Cancel', style: 'cancel' }, { text: 'Settings', onPress: () => {
+        Alert.alert('Permission Required', 'Please enable notifications in your device settings to receive order updates and messages.', [
+            { text: 'Cancel', style: 'cancel' }, 
+            { text: 'Settings', onPress: () => {
               if (Platform.OS === 'ios') {
                 Linking.openURL('app-settings:');
               } else {
@@ -276,8 +278,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       // Disable notifications
       try {
         // Show alert explaining that user needs to manually disable notifications
-        Alert.alert('Notifications', 'To completely disable notifications, please go to your device settings and turn off notifications for Airrands.'[
-            { text: 'Cancel', style: 'cancel' }, { 
+        Alert.alert('Notifications', 'To completely disable notifications, please go to your device settings and turn off notifications for Airrands.', [
+            { text: 'Cancel', style: 'cancel' }, 
+            { 
               text: 'Open Settings', onPress: () => {
                 if (Platform.OS === 'ios') {
                   Linking.openURL('app-settings:');
@@ -327,8 +330,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       
       if (!canAskAgain) {
         // Can't ask again, show settings alert
-        Alert.alert('Permission Required', 'Please enable location services in your device settings to find nearby stores and track deliveries.'[
-            { text: 'Cancel', style: 'cancel' }, { text: 'Settings', onPress: () => {
+        Alert.alert('Permission Required', 'Please enable location services in your device settings to find nearby stores and track deliveries.', [
+            { text: 'Cancel', style: 'cancel' }, 
+            { text: 'Settings', onPress: () => {
               if (Platform.OS === 'ios') {
                 Linking.openURL('app-settings:');
               } else {
@@ -344,8 +348,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       
       if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please enable location services in your device settings to find nearby stores and track deliveries.'[
-            { text: 'Cancel', style: 'cancel' }, { text: 'Settings', onPress: () => {
+        Alert.alert('Permission Required', 'Please enable location services in your device settings to find nearby stores and track deliveries.', [
+            { text: 'Cancel', style: 'cancel' }, 
+            { text: 'Settings', onPress: () => {
               if (Platform.OS === 'ios') {
                 Linking.openURL('app-settings:');
               } else {
@@ -371,8 +376,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       // Disable location services
       try {
         // Show alert explaining that user needs to manually disable location
-        Alert.alert('Location Services', 'To completely disable location access, please go to your device settings and turn off location for Airrands.'[
-            { text: 'Cancel', style: 'cancel' }, { 
+        Alert.alert('Location Services', 'To completely disable location access, please go to your device settings and turn off location for Airrands.', [
+            { text: 'Cancel', style: 'cancel' }, 
+            { 
               text: 'Open Settings', onPress: () => {
                 if (Platform.OS === 'ios') {
                   Linking.openURL('app-settings:');

@@ -64,7 +64,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       const value = formData?.[field as keyof FormData];
       const rules = validationRules?.[field];
       const result = validateField(value, rules);
-      newErrors?.[field as keyof FormErrors] = result.errors;
+      if (newErrors && result.errors) {
+        newErrors[field as keyof FormErrors] = result.errors;
+      }
     });
 
     setErrors(newErrors);

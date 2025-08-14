@@ -10,7 +10,8 @@ import {
   Animated,
   Alert,
   SafeAreaView,
-  StatusBar
+  StatusBar,
+  Linking
 } from 'react-native';
 import { 
   Text, 
@@ -234,7 +235,7 @@ const SellerProfileScreen: React.FC<SellerProfileScreenProps> = ({ navigation, r
         `Call ${seller.name}?`,
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Call', onPress: () => handleCallSeller() }
+          { text: 'Call', onPress: () => Linking.openURL(`tel:${seller.phone}`) }
         ]
       );
     }

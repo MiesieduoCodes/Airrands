@@ -533,9 +533,10 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
     let errandDocRef = await db.collection('errands').add(fullErrandData) as unknown as DocumentReference;
     if (!errandDocRef) return;
     setErrandModalVisible(false);
-    Alert.alert('Success', 'Your errand request has been sent!'[
+    Alert.alert('Success', 'Your errand request has been sent!', [
         {
-          text: 'Track Errand', onPress: () => navigation.navigate('OrderTracking', {
+          text: 'Track Errand', 
+          onPress: () => navigation.navigate('OrderTracking', {
             jobType: 'errand',
             jobId: errandDocRef.id,
             orderNumber: errandDocRef.id,
