@@ -14,6 +14,7 @@ import * as Location from 'expo-location';
 import { updateRunnerLocation, updateAvailability, getProfile, updateErrandStatus } from '../../services/runnerServices';
 import { useRunnerAvailability } from '../../contexts/RunnerAvailabilityContext';
 import io from 'socket.io-client';
+import { PRODUCTION_CONFIG } from '../../config/production';
 
 interface ErrandsScreenProps {
   navigation: RunnerNavigationProp;
@@ -79,7 +80,7 @@ const ErrandsScreen: React.FC<ErrandsScreenProps> = ({ navigation, route }) => {
   const { isAvailable, setAvailability, loading: availabilityLoading } = useRunnerAvailability();
   const [refreshing, setRefreshing] = useState(false);
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
-  const SOCKET_URL = 'https://your-production-domain.com'; // Replace with your actual server URL
+  const SOCKET_URL = PRODUCTION_CONFIG.SOCKET_URL;
   const [socket, setSocket] = useState<any>(null);
   
   // Handle navigation parameters from notifications

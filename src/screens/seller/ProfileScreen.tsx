@@ -10,7 +10,6 @@ import { getProfile, updateSellerProfile, startLocationTracking, stopLocationTra
 import BusinessSettings from '../../components/BusinessSettings';
 import * as ImagePicker from 'expo-image-picker';
 import * as Animatable from 'react-native-animatable';
-import { testBackendIntegration } from '../../utils/backendTest';
 
 const { width } = Dimensions.get('window');
 
@@ -45,8 +44,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           phone: '',
           address: 'Address not set',
           description: 'No description available',
-          coverImage: 'https://via.placeholder.com/400x200',
-          avatar: 'https://via.placeholder.com/80x80',
+          coverImage: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=200&fit=crop',
+          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face',
           rating: 0,
           reviews: 0,
           totalSales: 0,
@@ -584,12 +583,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               onPress={() => navigateToScreen('Feedback')}
             />
             
-            <List.Item
-              title="Test Backend Integration"
-              titleStyle={{ color: theme.colors.primary }}
-              left={props => <List.Icon {...props} icon="test-tube" color={theme.colors.primary} />}
-              onPress={() => testBackendIntegration(user?.uid || '')}
-            />
           </Surface>
         </Animatable.View>
 

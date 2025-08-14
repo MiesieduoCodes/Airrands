@@ -9,6 +9,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import io from 'socket.io-client';
 import * as Location from 'expo-location';
 import { updateErrandStatus, updateRunnerLocation } from '../../services/runnerServices';
+import { PRODUCTION_CONFIG } from '../../config/production';
 
 interface RunnerTrackingScreenProps {
   route: {
@@ -42,7 +43,7 @@ const RunnerTrackingScreen: React.FC<RunnerTrackingScreenProps> = ({ route, navi
   const [activeTab, setActiveTab] = useState<'tracking' | 'details'>('tracking');
   
   // Socket configuration
-  const SOCKET_URL = 'https://your-production-domain.com'; // Replace with your actual server URL
+  const SOCKET_URL = PRODUCTION_CONFIG.SOCKET_URL;
   const [socket, setSocket] = useState<any>(null);
   const [isConnected, setIsConnected] = useState(false);
   

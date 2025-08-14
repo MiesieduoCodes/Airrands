@@ -310,7 +310,7 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }: ProductsS
           </View>
 
           <View style={styles.imageContainer}>
-              <Image source={{ uri: item.images?.[0] || 'https://via.placeholder.com/300x200' }} style={styles.productImage} />
+              <Image source={{ uri: item.images?.[0] || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=300&h=200&fit=crop' }} style={styles.productImage} />
             {item.images.length > 1 && (
                 <Badge style={[styles.imageCountBadge, { backgroundColor: theme.colors.primary }]}>
                   {item.images.length}
@@ -402,7 +402,7 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }: ProductsS
         >
           <Surface style={[styles.gridCard, { backgroundColor: theme.colors.surface }]} elevation={3}>
             <View style={styles.gridImageContainer}>
-              <Image source={{ uri: item.images?.[0] || 'https://via.placeholder.com/300x200' }} style={styles.gridProductImage} />
+              <Image source={{ uri: item.images?.[0] || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=300&h=200&fit=crop' }} style={styles.gridProductImage} />
               {item.stockLevel <= item.lowStockThreshold && (
                 <View style={[styles.gridLowStockWarning, { backgroundColor: theme.colors.error }]}>
                   <Text style={[styles.gridLowStockText, { color: theme.colors.onError }]}>Low Stock</Text>
@@ -691,69 +691,94 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }: ProductsS
   }, [user?.uid]);
 
   return (<SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        {/* Header */}
+        {/* Modern Header */}
         <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
           <View style={styles.headerContent}>
-          <View style={styles.headerLeft}>
-            <Text variant="headlineMedium" style={[styles.headerTitle, { color: theme.colors.onSurface }]}>
-              Products
-            </Text>
-            <Text variant="bodyMedium" style={[styles.headerSubtitle, { color: theme.colors.onSurfaceVariant }]}>
-              {products.length} product{products.length !== 1 ? 's' : ''}
-            </Text>
-          </View>
-          
-          <View style={styles.headerRight}>
-            <TouchableOpacity
-              onPress={() => {
-                try {
-                  setShowNotifications(true);
-                } catch (error) {
-                  console.error('Error opening notifications:', error);
-                  // Fallback: show a simple alert
-                  Alert.alert('Error', 'Unable to open notifications. Please try again.');
-                }
-              }}
-              style={styles.notificationButton}
-            >
-                  <IconButton
-                    icon="bell"
-                size={24}
-                    iconColor={theme.colors.onSurface}
-                    style={styles.notificationIcon}
-                  />
-                  {(unreadCount || 0) > 0 && (
-                    <Badge
-                  style={[styles.notificationBadge, { backgroundColor: theme.colors.primary }]}
-                      size={16}
-                    >
+            <View style={styles.headerLeft}>
+              <Text variant="headlineLarge" style={[styles.headerTitle, { color: theme.colors.onSurface }]}>
+                My Products
+              </Text>
+              <View style={styles.headerStats}>
+                <View style={[styles.statItem, { backgroundColor: theme.colors.primaryContainer }]}>
+                  <Text variant="titleMedium" style={[styles.statNumber, { color: theme.colors.primary }]}>
+                    {products.length}
+                  </Text>
+                  <Text variant="bodySmall" style={[styles.statLabel, { color: theme.colors.onSurfaceVariant }]}>
+                    Products
+                  </Text>
+                </View>
+                <View style={[styles.statItem, { backgroundColor: theme.colors.secondaryContainer }]}>
+                  <Text variant="titleMedium" style={[styles.statNumber, { color: theme.colors.secondary }]}>
+                    {products.filter(p => p.available).length}
+                  </Text>
+                  <Text variant="bodySmall" style={[styles.statLabel, { color: theme.colors.onSurfaceVariant }]}>
+                    Active
+                  </Text>
+                </View>
+              </View>
+            </View>
+            
+            <View style={styles.headerRight}>
+              <TouchableOpacity
+                onPress={() => {
+                  try {
+                    setShowNotifications(true);
+                  } catch (error) {
+                    console.error('Error opening notifications:', error);
+                    Alert.alert('Error', 'Unable to open notifications. Please try again.');
+                  }
+                }}
+                style={[styles.notificationButton, { backgroundColor: theme.colors.surfaceVariant }]}
+              >
+                <MaterialCommunityIcons
+                  name="bell-outline"
+                  size={24}
+                  color={theme.colors.onSurface}
+                />
+                {(unreadCount || 0) > 0 && (
+                  <View style={[styles.notificationBadge, { backgroundColor: theme.colors.primary }]}>
+                    <Text style={[styles.badgeText, { color: theme.colors.onPrimary }]}>
                       {(unreadCount || 0) > 99 ? '99+' : (unreadCount || 0)}
-                    </Badge>
-                  )}
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
             
-            <IconButton
-              icon={viewMode === 'grid' ? 'view-list' : 'view-grid'}
-              size={24}
-              onPress={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-              iconColor={theme.colors.onSurface}
-            />
+              <TouchableOpacity
+                style={[styles.viewToggleButton, { backgroundColor: theme.colors.surfaceVariant }]}
+                onPress={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+              >
+                <MaterialCommunityIcons
+                  name={viewMode === 'grid' ? 'view-list' : 'view-grid'}
+                  size={20}
+                  color={theme.colors.onSurface}
+                />
+              </TouchableOpacity>
             </View>
           </View>
 
-          {/* Search and Filters */}
+          {/* Modern Search and Filters */}
           <View style={styles.searchContainer}>
             <View style={styles.searchSection}>
-              <Searchbar
-                placeholder="Search products..."
-                onChangeText={setSearchQuery}
-                value={searchQuery}
-                style={[styles.searchBar, { backgroundColor: theme.colors.surfaceVariant }]}
-                iconColor={theme.colors.onSurfaceVariant}
-                inputStyle={[styles.searchInput, { color: theme.colors.onSurface }]}
-                placeholderTextColor={theme.colors.onSurfaceVariant}
-                elevation={0}
-              />
+              <View style={[styles.searchBarContainer, { backgroundColor: theme.colors.surfaceVariant }]}>
+                <MaterialIcons name="search" size={20} color={theme.colors.onSurfaceVariant} style={styles.searchIcon} />
+                <TextInput
+                  placeholder="Search products..."
+                  onChangeText={setSearchQuery}
+                  value={searchQuery}
+                  style={[styles.searchInput, { color: theme.colors.onSurface }]}
+                  placeholderTextColor={theme.colors.onSurfaceVariant}
+                  mode="flat"
+                  underlineColor="transparent"
+                  activeUnderlineColor="transparent"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearSearchButton}>
+                    <MaterialIcons name="close" size={18} color={theme.colors.onSurfaceVariant} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              
               <TouchableOpacity 
                 style={[styles.filterToggleButton, { backgroundColor: theme.colors.primary }]}
                 onPress={() => setShowFilters(!showFilters)}
@@ -766,39 +791,41 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }: ProductsS
               <Chip
                 selected={selectedCategory === 'all'}
                 onPress={() => setSelectedCategory('all')}
-                style={[styles.filterChip, selectedCategory === 'all' && { backgroundColor: theme.colors.primary }]}
-                textStyle={{ color: selectedCategory === 'all' ? 'white' : theme.colors.onSurface }}
+                style={[
+                  styles.filterChip, 
+                  selectedCategory === 'all' && { 
+                    backgroundColor: theme.colors.primary,
+                    borderColor: theme.colors.primary
+                  }
+                ]}
+                textStyle={{ 
+                  color: selectedCategory === 'all' ? theme.colors.onPrimary : theme.colors.onSurface 
+                }}
+                mode={selectedCategory === 'all' ? 'flat' : 'outlined'}
               >
                 All
               </Chip>
-              {categories.filter((c: Category) => !c.parentId).map((category: Category) => (<Chip
+              {categories.filter((c: Category) => !c.parentId).map((category: Category) => (
+                <Chip
                   key={category.id}
                   selected={selectedCategory === category.id}
                   onPress={() => setSelectedCategory(category.id)}
-                  style={[styles.filterChip, selectedCategory === category.id && { backgroundColor: theme.colors.primary }]}
-                  textStyle={{ color: selectedCategory === category.id ? 'white' : theme.colors.onSurface }}
+                  style={[
+                    styles.filterChip, 
+                    selectedCategory === category.id && { 
+                      backgroundColor: theme.colors.primary,
+                      borderColor: theme.colors.primary
+                    }
+                  ]}
+                  textStyle={{ 
+                    color: selectedCategory === category.id ? theme.colors.onPrimary : theme.colors.onSurface 
+                  }}
+                  mode={selectedCategory === category.id ? 'flat' : 'outlined'}
                 >
                   {category.name}
                 </Chip>
               ))}
             </ScrollView>
-
-            <View style={styles.sortSection}>
-              <Text variant="bodyMedium" style={[styles.sortLabel, { color: theme.colors.onSurfaceVariant }]}>
-                Sort by:
-              </Text>
-              <SegmentedButtons
-                value={''} // No sorting state managed here
-                onValueChange={() => {}}
-                buttons={[
-                  { value: 'name', label: 'Name' },
-                  { value: 'price', label: 'Price' },
-                  { value: 'stock', label: 'Stock' },
-                  { value: 'rating', label: 'Rating' },
-                ]}
-                style={styles.sortButtons}
-              />
-            </View>
           </View>
         </View>
 
@@ -1096,28 +1123,33 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FA',
   },
   header: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 20,
+    paddingBottom: 24,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E9ECEF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    marginBottom: 20,
+    alignItems: 'flex-start',
+    marginBottom: 24,
   },
   headerLeft: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '800',
-    marginBottom: 8,
+    marginBottom: 16,
     color: '#1A1A1A',
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 16,
@@ -1131,8 +1163,13 @@ const styles = StyleSheet.create({
   },
   notificationButton: {
     position: 'relative',
-    borderRadius: 12,
-    padding: 4,
+    borderRadius: 16,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   notificationIcon: {
     margin: 0,
@@ -1140,12 +1177,17 @@ const styles = StyleSheet.create({
   },
   notificationBadge: {
     position: 'absolute',
-    top: 2,
-    right: 2,
-    borderRadius: 10,
+    top: 8,
+    right: 8,
+    borderRadius: 12,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
   },
   searchContainer: {
-    marginBottom: 20,
+    marginBottom: 0,
   },
   searchBar: {
     borderRadius: 16,
@@ -1159,19 +1201,19 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   filtersContainer: {
-    marginBottom: 20,
+    marginBottom: 0,
   },
   filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    marginRight: 12,
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E9ECEF',
-    minWidth: 100,
-    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   filterChipActive: {
     backgroundColor: '#007AFF',
@@ -1192,9 +1234,13 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   viewToggleButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 16,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   viewToggleButtonActive: {
     backgroundColor: '#FFFFFF',
@@ -1216,69 +1262,72 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingTop: 20,
   },
   productCard: {
-    borderRadius: 20,
+    borderRadius: 24,
     backgroundColor: '#FFFFFF',
-    marginBottom: 16,
+    marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   productImage: {
     width: '100%',
-    height: 200,
+    height: 220,
     resizeMode: 'cover',
   },
   productContent: {
-    padding: 20,
+    padding: 24,
   },
   productHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   productTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: '#1A1A1A',
     flex: 1,
-    marginRight: 12,
+    marginRight: 16,
+    lineHeight: 26,
   },
   productPrice: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '800',
     color: '#34C759',
   },
   productDescription: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#6C757D',
-    lineHeight: 20,
-    marginBottom: 16,
+    lineHeight: 22,
+    marginBottom: 20,
   },
   productMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 16,
+    marginBottom: 20,
+    gap: 20,
   },
   metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   metaIcon: {
-    marginRight: 6,
+    marginRight: 8,
   },
   metaText: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#6C757D',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   productActions: {
     flexDirection: 'row',
@@ -1286,9 +1335,13 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    borderRadius: 16,
-    paddingVertical: 12,
+    borderRadius: 20,
+    paddingVertical: 14,
     elevation: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   editButton: {
     backgroundColor: '#007AFF',
@@ -1299,8 +1352,8 @@ const styles = StyleSheet.create({
   buttonContent: {
     paddingVertical: 8,
   },
-  buttonLabel: {
-    fontSize: 15,
+  buttonText: {
+    fontSize: 16,
     fontWeight: '600',
   },
   fab: {
@@ -1317,22 +1370,39 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   modalContainer: {
-    margin: 20,
-    borderRadius: 24,
-    maxHeight: '90%',
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
     backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    margin: 20,
+    width: '90%',
+    maxHeight: '80%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 0.25,
     shadowRadius: 20,
-    elevation: 8,
+    elevation: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
   },
   modalTitle: {
-    fontWeight: '800',
-    marginBottom: 28,
-    textAlign: 'center',
     fontSize: 24,
+    fontWeight: '700',
     color: '#1A1A1A',
+  },
+  modalCloseButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
   },
   imagesSection: {
     marginBottom: 28,
@@ -1427,39 +1497,36 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 48,
-    paddingVertical: 80,
+    paddingHorizontal: 40,
   },
-  emptyStateIcon: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
+  emptyIcon: {
+    fontSize: 80,
+    color: '#CBD5E1',
     marginBottom: 24,
-    backgroundColor: '#F8F9FA',
   },
-  emptyStateTitle: {
+  emptyTitle: {
+    fontSize: 24,
     fontWeight: '700',
-    marginBottom: 8,
+    color: '#475569',
+    marginBottom: 12,
     textAlign: 'center',
-    fontSize: 18,
-    color: '#1A1A1A',
   },
-  emptyStateSubtitle: {
+  emptySubtitle: {
+    fontSize: 16,
+    color: '#64748B',
     textAlign: 'center',
-    opacity: 0.7,
-    lineHeight: 22,
-    color: '#6C757D',
+    lineHeight: 24,
+    marginBottom: 32,
   },
   loadingContainer: {
-    padding: 24,
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 12,
+    marginTop: 16,
     fontSize: 16,
-    color: '#6C757D',
+    color: '#64748B',
   },
   productInfo: {
     flex: 1,
@@ -1541,13 +1608,20 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E5E5',
   },
   gridProductCard: {
-    borderRadius: 12,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
     overflow: 'hidden',
-    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   gridProductImage: {
     width: '100%',
-    height: 150,
+    height: 160,
     resizeMode: 'cover',
   },
   gridProductPrice: {
@@ -1557,13 +1631,35 @@ const styles = StyleSheet.create({
   },
   gridProductMeta: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
+    marginBottom: 16,
+    gap: 12,
   },
-  gridStockText: {
+  gridMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  gridMetaIcon: {
+    marginRight: 4,
+  },
+  gridMetaText: {
     fontSize: 12,
-    fontWeight: '500',
+    color: '#6C757D',
+    fontWeight: '600',
+  },
+  gridProductActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  gridActionButton: {
+    flex: 1,
+    borderRadius: 16,
+    paddingVertical: 10,
+    elevation: 0,
+  },
+  gridButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   // Add missing styles
   animatableContainer: {
@@ -1626,16 +1722,24 @@ const styles = StyleSheet.create({
   gridStockInfo: {
     marginTop: 8,
   },
+  gridStockText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
   searchSection: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   filterToggleButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 20,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   sortSection: {
     marginBottom: 16,
@@ -1685,6 +1789,59 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+  },
+  searchBarContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  searchIcon: {
+    marginRight: 12,
+  },
+  clearSearchButton: {
+    padding: 8,
+    borderRadius: 12,
+  },
+  headerStats: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  statItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    minWidth: 80,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  statNumber: {
+    fontWeight: 'bold',
+    marginBottom: 4,
+    fontSize: 20,
+  },
+  statLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 });
 

@@ -158,13 +158,32 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ navigation }) => {
   );
 
   return (<SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.header}>
-        <Text variant="headlineMedium" style={[styles.headerTitle, { color: theme.colors.onSurface }]}>
-          Messages
-        </Text>
-        <Text variant="bodyMedium" style={[styles.headerSubtitle, { color: theme.colors.onSurfaceVariant }]}>
-          {chats.length} conversation{chats.length !== 1 ? 's' : ''}
-        </Text>
+      <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
+        <View style={styles.headerContent}>
+          <View style={styles.headerLeft}>
+            <Text variant="headlineLarge" style={[styles.headerTitle, { color: theme.colors.onSurface }]}>
+              Messages
+            </Text>
+            <View style={styles.headerStats}>
+              <View style={[styles.statItem, { backgroundColor: theme.colors.primaryContainer }]}>
+                <Text variant="titleMedium" style={[styles.statNumber, { color: theme.colors.primary }]}>
+                  {chats.length}
+                </Text>
+                <Text variant="bodySmall" style={[styles.statLabel, { color: theme.colors.onSurfaceVariant }]}>
+                  Conversations
+                </Text>
+              </View>
+              <View style={[styles.statItem, { backgroundColor: theme.colors.secondaryContainer }]}>
+                <Text variant="titleMedium" style={[styles.statNumber, { color: theme.colors.secondary }]}>
+                  {chats.filter(chat => chat.unreadCount > 0).length}
+                </Text>
+                <Text variant="bodySmall" style={[styles.statLabel, { color: theme.colors.onSurfaceVariant }]}>
+                  Unread
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
       </View>
       
       <View style={styles.searchContainer}>
@@ -214,16 +233,30 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 20,
+    paddingBottom: 24,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E9ECEF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerLeft: {
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '800',
-    marginBottom: 8,
+    marginBottom: 16,
     color: '#1A1A1A',
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 16,
@@ -372,6 +405,33 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: '#6C757D',
+  },
+  headerStats: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  statItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    minWidth: 80,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  statNumber: {
+    fontWeight: 'bold',
+    marginBottom: 4,
+    fontSize: 20,
+  },
+  statLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });
 

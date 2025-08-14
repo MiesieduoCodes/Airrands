@@ -8,6 +8,7 @@ import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { updateOrderStatus } from '../../services/buyerServices';
 import io from 'socket.io-client';
 import * as Location from 'expo-location';
+import { PRODUCTION_CONFIG } from '../../config/production';
 
 interface OrderTrackingScreenProps {
   route: {
@@ -80,7 +81,7 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
   const mapRef = useRef<MapView>(null);
   
   // Socket configuration
-  const SOCKET_URL = 'https://your-production-domain.com'; // Replace with your actual server URL
+  const SOCKET_URL = PRODUCTION_CONFIG.SOCKET_URL;
   const [socket, setSocket] = useState<any>(null);
   const [isConnected, setIsConnected] = useState(false);
 
@@ -209,61 +210,83 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
     }
   }, [doc]);
 
-  // Socket connection for real-time updates
+  // Initialize Socket.io connection
   useEffect(() => {
-    if (!id) return;
-    
-    const s = io(SOCKET_URL, { 
-      transports: ['websocket'],
-      timeout: 10000,
-      reconnection: true,
-      reconnectionAttempts: 5,
-    });
+    const initSocket = async () => {
+      try {
+        const newSocket = io(SOCKET_URL, {
+          transports: ['websocket', 'polling'],
+          timeout: 10000,
+          reconnection: true,
+          reconnectionAttempts: 5,
+        });
 
-    s.on('connect', () => {
-      setIsConnected(true);
-    s.emit('join', { jobId: id, type });
-    });
+        newSocket.on('connect', () => {
+          console.log('Socket.io connected for order tracking');
+          setIsConnected(true);
+          
+          // Join tracking room
+          if (id && type) {
+            newSocket.emit('join', { jobId: id, type, role: 'buyer' });
+          }
+        });
 
-    s.on('disconnect', () => {
-      setIsConnected(false);
-    });
+        newSocket.on('disconnect', () => {
+          console.log('Socket.io disconnected');
+          setIsConnected(false);
+        });
 
-    s.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
-      setIsConnected(false);
-    });
+        newSocket.on('connect_error', (error) => {
+          console.error('Socket.io connection error:', error);
+          setIsConnected(false);
+        });
 
-    // Listen for status/location updates
-    s.on('statusUpdate', (data) => {
-      if (data.id === id) {
-        setDoc((prev: any) => ({ ...prev, status: data.status }));
+        // Listen for real-time updates
+        newSocket.on('statusUpdate', (data) => {
+          if (data.id === id) {
+            console.log('Received status update:', data);
+            // Update the document with new status
+            setDoc(prev => ({ ...prev, status: data.status, ...data.data }));
+          }
+        });
+
+        newSocket.on('locationUpdate', (data) => {
+          if (data.id === id) {
+            console.log('Received location update:', data);
+            // Update runner location
+            setDoc(prev => ({ 
+              ...prev, 
+              runnerLocation: data.location,
+              lastLocationUpdate: data.timestamp 
+            }));
+          }
+        });
+
+        newSocket.on('routeUpdate', (data) => {
+          if (data.id === id) {
+            console.log('Received route update:', data);
+            // Update route coordinates
+            setRouteCoordinates(data.route || []);
+          }
+        });
+
+        setSocket(newSocket);
+
+        return () => {
+          if (id && type) {
+            newSocket.emit('leave', { jobId: id, type });
+          }
+          newSocket.disconnect();
+        };
+      } catch (error) {
+        console.error('Error initializing socket:', error);
       }
-    });
-
-    s.on('locationUpdate', (data) => {
-      if (data.id === id) {
-        setDoc((prev: any) => ({ 
-          ...prev, 
-          runnerLocation: data.location,
-          lastLocationUpdate: new Date().toISOString()
-        }));
-      }
-    });
-
-    s.on('routeUpdate', (data) => {
-      if (data.id === id && data.route) {
-        setRouteCoordinates(data.route);
-      }
-    });
-
-    setSocket(s);
-    
-    return () => {
-      s.emit('leave', { jobId: id, type });
-      s.disconnect();
     };
-  }, [id, type]);
+
+    if (id && type) {
+      initSocket();
+    }
+  }, [id, type, SOCKET_URL]);
 
   // Real-time Firestore listener
   useEffect(() => {
@@ -343,9 +366,16 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}> 
       <Card style={styles.card}>
         <Card.Content>
-          <Text variant="titleLarge" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
-            {type === 'order' ? 'Order Tracking' : 'Errand Tracking'}
-          </Text>
+          <View style={styles.headerRow}>
+            <Text variant="titleLarge" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
+              {type === 'order' ? 'Order Tracking' : 'Errand Tracking'}
+            </Text>
+            <View style={[styles.connectionStatus, { backgroundColor: isConnected ? theme.colors.primary : theme.colors.error }]}>
+              <Text style={styles.connectionText}>
+                {isConnected ? '🟢 Live' : '🔴 Offline'}
+              </Text>
+            </View>
+          </View>
           <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
             {doc.orderNumber || `#${doc.id.slice(-8)}`}
           </Text>
@@ -771,6 +801,22 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  connectionStatus: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  connectionText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 });
 

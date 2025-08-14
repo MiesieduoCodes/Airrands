@@ -26,6 +26,7 @@ import { BuyerNavigationProp } from '../../navigation/types';
 import NotificationDrawer from '../../components/NotificationDrawer';
 import NotificationBadge from '../../components/NotificationBadge';
 import ErrandRequestModal from '../../components/ErrandRequestModal';
+import { PAYSTACK_PUBLIC_KEY } from '../../config/paystack';
 import ReviewPromptModal from '../../components/ReviewPromptModal';
 import * as Animatable from 'react-native-animatable';
 import { getStores, getRunners, getNotifications, getProducts } from '../../services/buyerServices';
@@ -35,6 +36,7 @@ import { sendPushNotification } from '../../services/notificationService'; // ad
 import { useNotification } from '../../contexts/NotificationContext';
 import { DocumentReference } from 'firebase/firestore';
 import { haversineDistance, formatDistance, calculateAndFormatDistance, isValidCoordinate } from '../../utils/distance';
+const PaystackWebView = require('react-native-paystack-webview').default;
 import * as Location from 'expo-location';
 
 const { width, height } = Dimensions.get('window');
@@ -114,6 +116,11 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
   const [products, setProducts] = useState<any[]>([]); // State for products
   const [error, setError] = useState<string | null>(null); // State for error messages
   const [reviewPromptVisible, setReviewPromptVisible] = useState(false);
+  
+  // Payment state for errand requests
+  const [showPaystack, setShowPaystack] = useState(false);
+  const [pendingErrand, setPendingErrand] = useState<any>(null);
+  const [paystackTxnRef, setPaystackTxnRef] = useState('');
 
 
   const categories = [
@@ -620,6 +627,105 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
     }
   };
 
+  // Payment handling for errand requests
+  const handlePaymentRequired = (errandData: any, amount: number) => {
+    // Generate unique transaction reference
+    const ref = `errand_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    setPaystackTxnRef(ref);
+    setPendingErrand(errandData);
+    setShowPaystack(true);
+  };
+
+  const handlePaystackSuccess = async (response: any) => {
+    setShowPaystack(false);
+    
+    if (!pendingErrand || !selectedRunner || !user) {
+      Alert.alert('Error', 'Payment successful but errand data is missing.');
+      return;
+    }
+
+    try {
+      // Create the errand with payment confirmation
+      const pickupLat = pendingErrand.pickupLatitude || 6.5244;
+      const pickupLng = pendingErrand.pickupLongitude || 3.3792;
+      const dropoffLat = pendingErrand.dropoffLatitude || 6.5244;
+      const dropoffLng = pendingErrand.dropoffLongitude || 3.3792;
+
+      const distance = haversineDistance(pickupLat, pickupLng, dropoffLat, dropoffLng);
+      const fee = Math.round(distance * 1000);
+
+      const fullErrandData: FullErrandData = {
+        ...pendingErrand,
+        runnerId: selectedRunner.id,
+        runnerName: selectedRunner.name,
+        runnerImage: selectedRunner.image,
+        buyerId: user.uid,
+        buyerName: user.displayName,
+        buyerEmail: user.email,
+        status: 'available',
+        createdAt: new Date().toISOString(),
+        distance: distance.toFixed(2) + ' km',
+        fee,
+        paymentStatus: 'paid',
+        paymentReference: paystackTxnRef,
+        paystackData: response.data,
+      };
+
+      const errandDocRef = await db.collection('errands').add(fullErrandData) as unknown as DocumentReference;
+      
+      setErrandModalVisible(false);
+      setPendingErrand(null);
+      
+      Alert.alert('Success', 'Your errand request has been submitted and paid for!', [
+        {
+          text: 'Track Errand', 
+          onPress: () => navigation.navigate('OrderTracking', {
+            jobType: 'errand',
+            jobId: errandDocRef.id,
+            orderNumber: errandDocRef.id,
+          })
+        }
+      ]);
+
+      // Send notifications (same logic as before)
+      try {
+        const runnerDoc = await db.collection('users').doc(selectedRunner.id).get();
+        const runnerData = runnerDoc.data();
+        const runnerPushToken = runnerData?.expoPushToken;
+
+        const buyerDoc = await db.collection('users').doc(user.uid).get();
+        const buyerData = buyerDoc.data();
+        const buyerPushToken = buyerData?.expoPushToken;
+
+        if (runnerPushToken) {
+          await sendPushNotification(
+            runnerPushToken,
+            'New Errand Request',
+            `${user.displayName || 'A buyer'} requested: "${fullErrandData.title}" at ${fullErrandData.location}.`
+          );
+        }
+        if (buyerPushToken) {
+          await sendPushNotification(
+            buyerPushToken,
+            'Errand Request Sent',
+            `Your request "${fullErrandData.title}" to ${selectedRunner.name} was sent!`
+          );
+        }
+      } catch (error) {
+        console.error('Error sending notifications:', error);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Payment successful but failed to create errand. Please contact support.');
+      console.error('Error creating errand after payment:', error);
+    }
+  };
+
+  const handlePaystackCancel = () => {
+    setShowPaystack(false);
+    setPendingErrand(null);
+    Alert.alert('Payment Cancelled', 'Your errand request was not submitted.');
+  };
+
   const handleStorePress = (store: Store) => {
     navigation.navigate('SellerProfile', { 
       sellerId: store.id, 
@@ -1037,6 +1143,7 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
         visible={errandModalVisible}
         onDismiss={() => setErrandModalVisible(false)}
         onSubmit={handleErrandSubmit}
+        onPaymentRequired={handlePaymentRequired}
       />
 
       {/* Review Prompt Modal */}
@@ -1057,6 +1164,24 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
           setReviewPromptVisible(false);
         }}
       />
+
+      {/* PayStack Payment for Errand Requests */}
+      {showPaystack && pendingErrand && (
+        <PaystackWebView
+          paystackKey={PAYSTACK_PUBLIC_KEY}
+          amount={Number(pendingErrand.budget)}
+          billingEmail={user?.email || ''}
+          billingName={user?.displayName || 'User'}
+          activityIndicatorColor={theme.colors.primary}
+          onSuccess={handlePaystackSuccess}
+          onCancel={handlePaystackCancel}
+          reference={paystackTxnRef}
+          autoStart={true}
+          channels={["card", "bank", "ussd"]}
+          currency="NGN"
+          description={`Payment for errand: ${pendingErrand.title}`}
+        />
+      )}
     </SafeAreaView>
   );
 };

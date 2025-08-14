@@ -37,6 +37,7 @@ import * as Location from 'expo-location';
 import { getRunners } from '../../services/buyerServices';
 import { sendOrderNotification } from '../../services/notificationService';
 import Constants from 'expo-constants';
+import { PAYSTACK_PUBLIC_KEY } from '../../config/paystack';
 
 // Utility function for accurate distance calculation using Haversine formula
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -879,7 +880,7 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
         <PaystackWebView
           buttonText="Pay Now"
           showPayButton={false}
-          paystackKey={Constants.expoConfig?.extra?.PAYSTACK_PUBLIC_KEY || 'pk_test_your_paystack_public_key_here'}
+          paystackKey={PAYSTACK_PUBLIC_KEY}
           amount={price * quantity}
           billingEmail={user?.email || ''}
           billingName={user?.displayName || ''}

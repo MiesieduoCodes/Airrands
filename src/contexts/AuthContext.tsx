@@ -35,23 +35,25 @@ const ensureUserProfile = async (firebaseUser: firebase.User): Promise<string> =
     const userDoc = await userRef.get();
     
     if (!userDoc.exists) {
-      // Create user profile
+      // Create new user profile with default role
       const userData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
-        displayName: firebaseUser.displayName,
-        photoURL: firebaseUser.photoURL,
-        emailVerified: firebaseUser.emailVerified,
+        displayName: firebaseUser.displayName || '',
+        photoURL: firebaseUser.photoURL || '',
+        role: 'buyer',
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        role: 'buyer', // Default role
-        verificationStatus: 'not_submitted',
+        emailVerified: firebaseUser.emailVerified,
+        phoneNumber: firebaseUser.phoneNumber || '',
+        lastLoginAt: firebase.firestore.FieldValue.serverTimestamp(),
       };
       
       await userRef.set(userData);
       return 'buyer';
     } else {
       const userData = userDoc.data();
-      return userData?.role || 'buyer';
+      const userRole = userData?.role || 'buyer';
+      return userRole;
     }
   } catch (error) {
     console.error('Error ensuring user profile:', error);

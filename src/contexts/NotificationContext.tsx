@@ -31,6 +31,65 @@ export const useNotification = () => {
   return ctx;
 };
 
+// Helper function to convert Firestore timestamp to ISO string
+const convertTimestampToString = (timestamp: any): string => {
+  try {
+    if (!timestamp) return new Date().toISOString();
+    
+    // If it's already a string, return it
+    if (typeof timestamp === 'string') return timestamp;
+    
+    // If it's a Firestore timestamp object with seconds and nanoseconds
+    if (timestamp.seconds !== undefined && timestamp.nanoseconds !== undefined) {
+      // Ensure seconds and nanoseconds are numbers
+      const seconds = Number(timestamp.seconds);
+      const nanoseconds = Number(timestamp.nanoseconds);
+      
+      if (isNaN(seconds) || isNaN(nanoseconds)) {
+        return new Date().toISOString();
+      }
+      
+      return new Date(seconds * 1000 + nanoseconds / 1000000).toISOString();
+    }
+    
+    // If it's a Date object
+    if (timestamp instanceof Date) {
+      return timestamp.toISOString();
+    }
+    
+    // If it's a number (milliseconds since epoch)
+    if (typeof timestamp === 'number') {
+      if (isNaN(timestamp)) {
+        return new Date().toISOString();
+      }
+      return new Date(timestamp).toISOString();
+    }
+    
+    // If it's a Firestore Timestamp object (from newer Firebase versions)
+    if (timestamp && typeof timestamp.toDate === 'function') {
+      try {
+        return timestamp.toDate().toISOString();
+      } catch (error) {
+        return new Date().toISOString();
+      }
+    }
+    
+    // If it's an object with a _seconds property (older Firebase versions)
+    if (timestamp && timestamp._seconds !== undefined) {
+      const seconds = Number(timestamp._seconds);
+      if (!isNaN(seconds)) {
+        return new Date(seconds * 1000).toISOString();
+      }
+    }
+    
+    // Fallback to current time
+    return new Date().toISOString();
+  } catch (error) {
+    console.error('Error converting timestamp:', error, 'Original timestamp:', timestamp);
+    return new Date().toISOString();
+  }
+};
+
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -55,7 +114,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                 id: doc.id,
                 title: data.title || '',
                 message: data.message || '',
-                time: data.time || data.createdAt || new Date().toISOString(),
+                time: convertTimestampToString(data.time || data.createdAt),
                 type: data.type || 'system',
                 isRead: data.isRead || false,
                 avatar: data.avatar,
@@ -117,7 +176,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         id: data.id,
         title: data.title || '',
         message: data.message || '',
-        time: data.time || data.createdAt || new Date().toISOString(),
+        time: convertTimestampToString(data.time || data.createdAt),
         type: data.type || 'system',
         isRead: data.isRead || false,
         avatar: data.avatar,

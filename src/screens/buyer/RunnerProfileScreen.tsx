@@ -10,6 +10,7 @@ import ErrandRequestModal from '../../components/ErrandRequestModal';
 import { COLORS } from '../../constants/colors';
 const PaystackWebView = require('react-native-paystack-webview').default;
 import Constants from 'expo-constants';
+import { PAYSTACK_PUBLIC_KEY } from '../../config/paystack';
 
 interface RunnerProfileScreenProps {
   navigation: RootNavigationProp;
@@ -463,7 +464,7 @@ const RunnerProfileScreen: React.FC<RunnerProfileScreenProps> = ({ navigation, r
       />
       {showPaystack && pendingErrand && (
         <PaystackWebView
-          paystackKey={Constants.expoConfig?.extra?.PAYSTACK_PUBLIC_KEY || 'pk_test_your_paystack_public_key_here'}
+          paystackKey={PAYSTACK_PUBLIC_KEY}
           amount={Number(pendingErrand.budget)}
           billingEmail={user.email}
           billingName={user.displayName || 'User'}

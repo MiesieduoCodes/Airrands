@@ -1,0 +1,24 @@
+{
+  "name": "airrands-socket-server",
+  "version": "1.0.0",
+  "description": "Socket.io server for Airrands real-time tracking",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "NODE_ENV=development node server.js"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": [
+    "socket.io",
+    "real-time",
+    "tracking",
+    "delivery"
+  ],
+  "author": "Airrands Team",
+  "license": "MIT"
+} 

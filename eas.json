@@ -1,41 +1,21 @@
 {
   "cli": {
-    "version": ">= 16.17.3"
+    "version": ">= 16.17.4",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "env": {
-        "NODE_ENV": "development"
-      }
+      "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk"
-      },
-      "env": {
-        "NODE_ENV": "staging"
-      }
+      "distribution": "internal"
     },
     "production": {
-      "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease"
-      },
-      "env": {
-        "NODE_ENV": "production"
-      },
-      "autoIncrement": "version"
+      "autoIncrement": true
     }
   },
   "submit": {
-    "production": {
-      "android": {
-        "serviceAccountKeyPath": "./google-service-account.json",
-        "track": "production"
-      }
-    }
+    "production": {}
   }
-} 
+}
