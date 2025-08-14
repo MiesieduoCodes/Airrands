@@ -75,7 +75,7 @@
       "FIREBASE_MESSAGING_SENDER_ID": "973554900024",
       "FIREBASE_APP_ID": "1:973554900024:web:0a2746c5599f45640f1acd",
       "FIREBASE_MEASUREMENT_ID": "G-QJCXMG81J8",
-      "PAYSTACK_PUBLIC_KEY": "pk_test_your_paystack_public_key_here",
+      "PAYSTACK_PUBLIC_KEY": "REPLACE_WITH_PRODUCTION_KEY",
       "eas": {
         "projectId": "14dab307-2aa2-4812-be99-dfc779091400"
       }

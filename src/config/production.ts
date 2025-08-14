@@ -1,5 +1,5 @@
 // Production Configuration
-// Update these URLs with your actual production domains
+// Your Railway domain is already configured below
 
 export const PRODUCTION_CONFIG = {
   // Socket.io Server URL - Your Railway domain

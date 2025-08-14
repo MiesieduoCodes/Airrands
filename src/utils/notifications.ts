@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 // Enhanced notification configuration
 export async function registerForPushNotificationsAsync(): Promise<string | undefined> {
@@ -19,8 +20,15 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
       return;
     }
     
+    // Get project ID from app.json
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    if (!projectId) {
+      console.error('No project ID found in app.json');
+      return;
+    }
+    
     token = (await Notifications.getExpoPushTokenAsync({
-      projectId: '34cba4fc-3850-421b-9dc0-239af1318762', // Your actual project ID
+      projectId: projectId,
     })).data;
     
     } else {
