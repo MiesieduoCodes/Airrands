@@ -1,6 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { RunnerTabParamList } from './types';
+import { RunnerTabParamList, RunnerNavigatorProps } from './types';
 import ErrandsScreen from '../screens/runner/ErrandsScreen';
 import MessagesScreen from '../screens/runner/MessagesScreen';
 import ProfileScreen from '../screens/runner/ProfileScreen';

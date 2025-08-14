@@ -233,6 +233,7 @@ const SellerProfileScreen: React.FC<SellerProfileScreenProps> = ({ navigation, r
     if (seller.phone) {
       Alert.alert(
         `Call ${seller.name}?`,
+        'Would you like to call this seller?',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Call', onPress: () => Linking.openURL(`tel:${seller.phone}`) }

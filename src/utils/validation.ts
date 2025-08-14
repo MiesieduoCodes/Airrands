@@ -208,7 +208,9 @@ export const validateForm = (formData: Record<string, string>, validationRules: 
       rules.confirmPassword = formData?.[rules.confirmPassword];
     }
 
-    results?.[fieldName] = validateField(value, rules);
+    if (results && fieldName) {
+      results[fieldName] = validateField(value, rules);
+    }
   });
 
   return results;

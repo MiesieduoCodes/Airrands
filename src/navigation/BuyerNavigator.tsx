@@ -1,6 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { BuyerTabParamList } from './types';
+import { BuyerTabParamList, BuyerNavigatorProps } from './types';
 import BuyerHomeScreen from '../screens/buyer/HomeScreen';
 import SearchScreen from '../screens/buyer/SearchScreen';
 import MessagesScreen from '../screens/buyer/MessagesScreen';

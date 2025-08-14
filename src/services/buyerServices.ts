@@ -285,7 +285,9 @@ export const updateOrderStatus = async (orderId: string, status: string, trackin
     const updateData: any = { status, updatedAt: new Date() };
     if (trackingUpdate) {
       // Merge tracking update into the order's tracking field
-      updateData?.[`tracking.${trackingUpdate.step}`] = true;
+      if (updateData && trackingUpdate.step) {
+        updateData[`tracking.${trackingUpdate.step}`] = true;
+      }
     }
     await orderRef.update(updateData);
 

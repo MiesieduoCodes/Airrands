@@ -1,6 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { SellerTabParamList } from './types';
+import { SellerTabParamList, SellerNavigatorProps } from './types';
 import ProductsScreen from '../screens/seller/ProductsScreen';
 import MessagesScreen from '../screens/seller/MessagesScreen';
 import OrdersScreen from '../screens/seller/OrdersScreen';

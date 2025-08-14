@@ -152,7 +152,9 @@ class RatingService {
       // Calculate rating distribution
       const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
       ratings.forEach(rating => {
-        distribution?.[rating.rating as keyof typeof distribution]++;
+        if (distribution && rating.rating) {
+          distribution[rating.rating as keyof typeof distribution]++;
+        }
       });
 
       // Get recent reviews (last 5)
