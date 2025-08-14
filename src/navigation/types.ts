@@ -190,3 +190,12 @@ export type SellerNavigationProp = BottomTabNavigationProp<SellerTabParamList> &
 export type RunnerNavigationProp = BottomTabNavigationProp<RunnerTabParamList> & {
   navigate: (screen: keyof RunnerTabParamList | 'Chat' | 'HelpCenter' | 'Feedback' | 'TermsOfService' | 'PrivacyPolicy' | 'DeactivateAccount' | 'ProductDetail' | 'Verification' | 'ReviewSubmission' | 'RunnerTrackingScreen', params?: any) => void;
 }; 
+
+// Navigator component prop types
+export type RunnerNavigatorProps = {
+  navigation: RunnerNavigationProp;
+};
+
+export type SellerNavigatorProps = {
+  navigation: SellerNavigationProp;
+}; 

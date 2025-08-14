@@ -58,15 +58,30 @@ const RunnerNavigator: React.FC<RunnerNavigatorProps> = ({ navigation }) => {
   return (<Tab.Navigator
       initialRouteName="Dashboard"
       screenOptions={{
-        tabBarActiveTintColor: theme.colors.primary, tabBarInactiveTintColor: theme.colors.onSurfaceVariant, tabBarStyle: {
-          backgroundColor: theme.colors.surface, borderTopColor: theme.colors.outlineVariant, borderTopWidth: 1, justifyContent: 'center', alignItems: 'center', paddingBottom: 20, paddingTop: 5, height: 70, _}, tabBarLabelStyle: {
-          fontSize: 12, fontWeight: '500', _}, headerShown: false, _}}
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
+        tabBarStyle: {
+          backgroundColor: theme.colors.surface,
+          borderTopColor: theme.colors.outlineVariant,
+          borderTopWidth: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingBottom: 20,
+          paddingTop: 5,
+          height: 70,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '500',
+        },
+        headerShown: false,
+      }}
     >
             <Tab.Screen
         name="Dashboard"
         component={RunnerDashboardScreen}
         options={{
-          tabBarLabel: 'Dashboard', tabBarIcon: ({ color, size }) => (
+          tabBarLabel: 'Dashboard', tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <React.Fragment>
               <MaterialCommunityIcons name="home" size={size} color={color} />
               {unreadErrands > 0 && (
@@ -95,7 +110,7 @@ const RunnerNavigator: React.FC<RunnerNavigatorProps> = ({ navigation }) => {
         component={ErrandsScreen}
         options={{
           tabBarLabel: 'Errands',
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <React.Fragment>
               <MaterialCommunityIcons name="clipboard-list" size={size} color={color} />
               {unreadErrands > 0 && (
@@ -123,7 +138,7 @@ const RunnerNavigator: React.FC<RunnerNavigatorProps> = ({ navigation }) => {
         component={MessagesScreen}
         options={{
           tabBarLabel: 'Messages',
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <React.Fragment>
               <MaterialCommunityIcons name="message" size={size} color={color} />
               {unreadCount > 0 && (
@@ -151,7 +166,7 @@ const RunnerNavigator: React.FC<RunnerNavigatorProps> = ({ navigation }) => {
         component={EarningsScreen}
         options={{
           tabBarLabel: 'Earnings',
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <MaterialCommunityIcons name="cash" size={size} color={color} />
           ),
         }}
@@ -161,7 +176,7 @@ const RunnerNavigator: React.FC<RunnerNavigatorProps> = ({ navigation }) => {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <MaterialCommunityIcons name="account" size={size} color={color} />
           ),
         }}

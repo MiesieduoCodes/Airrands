@@ -454,7 +454,7 @@ const SearchScreen = () => {
             value={searchQuery}
           style={[
             styles.searchBar, { 
-              backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.outline, _}
+              backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.outline}
           ]}
           inputStyle={[
             styles.searchInput, { color: theme.colors.onSurface }
@@ -465,7 +465,7 @@ const SearchScreen = () => {
             theme={{
               colors: {
               primary: theme.colors.primary, onSurface: theme.colors.onSurface, elevation: {
-                  level2: 'transparent', _}, _}, roundness: 12, _}}
+                  level2: 'transparent'}, }, roundness: 12}}
           />
         </Animatable.View>
 

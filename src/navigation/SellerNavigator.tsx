@@ -57,9 +57,23 @@ const SellerNavigator: React.FC<SellerNavigatorProps> = ({ navigation }) => {
   return (<Tab.Navigator
       initialRouteName="Products"
       screenOptions={{
-        tabBarActiveTintColor: theme.colors.primary, tabBarInactiveTintColor: theme.colors.onSurfaceVariant, tabBarStyle: {
-          backgroundColor: theme.colors.surface, borderTopColor: theme.colors.outlineVariant, borderTopWidth: 1, justifyContent: 'center', alignItems: 'center', paddingBottom: 20, paddingTop: 5, height: 70, _}, tabBarLabelStyle: {
-          fontSize: 12, fontWeight: '500', _}, headerShown: false, _// We're using custom headers in screens
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
+        tabBarStyle: {
+          backgroundColor: theme.colors.surface,
+          borderTopColor: theme.colors.outlineVariant,
+          borderTopWidth: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingBottom: 20,
+          paddingTop: 5,
+          height: 70,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '500',
+        },
+        headerShown: false, // We're using custom headers in screens
       }}
     >
       <Tab.Screen

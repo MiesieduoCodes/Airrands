@@ -26,7 +26,7 @@ interface ReviewPromptModalProps {
 }
 
 const ReviewPromptModal: React.FC<ReviewPromptModalProps> = ({
-  visible, onClose, onReviewSubmitted, _}) => {
+  visible, onClose, onReviewSubmitted}) => {
   const { theme } = useTheme();
   const { user } = useAuth();
   const [pendingPrompts, setPendingPrompts] = useState<ReviewPrompt[]>([]);

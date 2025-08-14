@@ -59,14 +59,14 @@ const BuyerNavigator: React.FC<BuyerNavigatorProps> = ({ navigation }) => {
       initialRouteName="Home"
       screenOptions={{
         tabBarActiveTintColor: theme.colors.primary, tabBarInactiveTintColor: theme.colors.onSurfaceVariant, tabBarStyle: {
-          backgroundColor: theme.colors.surface, borderTopColor: theme.colors.outlineVariant, borderTopWidth: 1, justifyContent: 'center', alignItems: 'center', paddingBottom: 20, paddingTop: 5, height: 70, _}, tabBarLabelStyle: {
-          fontSize: 12, fontWeight: '500', _}, headerShown: false, _}}
+          backgroundColor: theme.colors.surface, borderTopColor: theme.colors.outlineVariant, borderTopWidth: 1, justifyContent: 'center', alignItems: 'center', paddingBottom: 20, paddingTop: 5, height: 70}, tabBarLabelStyle: {
+          fontSize: 12, fontWeight: '500'}, headerShown: false}}
     >
       <Tab.Screen
         name="Home"
         component={BuyerHomeScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <MaterialCommunityIcons name="home" size={size} color={color} />
           ),
         }}
@@ -75,7 +75,7 @@ const BuyerNavigator: React.FC<BuyerNavigatorProps> = ({ navigation }) => {
         name="Search"
         component={SearchScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <MaterialCommunityIcons name="magnify" size={size} color={color} />
           ),
         }}
@@ -84,7 +84,7 @@ const BuyerNavigator: React.FC<BuyerNavigatorProps> = ({ navigation }) => {
         name="Messages"
         component={MessagesScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <React.Fragment>
             <MaterialCommunityIcons name="message" size={size} color={color} />
               {unreadCount > 0 && (
@@ -111,7 +111,7 @@ const BuyerNavigator: React.FC<BuyerNavigatorProps> = ({ navigation }) => {
         name="Orders"
         component={OrdersScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <React.Fragment>
             <MaterialCommunityIcons name="package" size={size} color={color} />
               {unreadOrders > 0 && (
@@ -138,7 +138,7 @@ const BuyerNavigator: React.FC<BuyerNavigatorProps> = ({ navigation }) => {
         name="Profile"
         component={ProfileScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <MaterialCommunityIcons name="account" size={size} color={color} />
           ),
         }}

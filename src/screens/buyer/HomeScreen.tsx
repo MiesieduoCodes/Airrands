@@ -533,7 +533,7 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
     let errandDocRef = await db.collection('errands').add(fullErrandData) as unknown as DocumentReference;
     if (!errandDocRef) return;
     setErrandModalVisible(false);
-    Alert.alert('Success', 'Your errand request has been sent!', _?.[
+    Alert.alert('Success', 'Your errand request has been sent!'[
         {
           text: 'Track Errand', onPress: () => navigation.navigate('OrderTracking', {
             jobType: 'errand',
@@ -710,7 +710,7 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
             {filteredStores.map((store) => (<Marker
                 key={`store-${store.id}`}
                 coordinate={{
-                  latitude: store.latitude, longitude: store.longitude, _}}
+                  latitude: store.latitude, longitude: store.longitude}}
                 onPress={() => handleStorePress(store)}
               >
                 <View style={styles.markerContainer}>
@@ -734,7 +734,7 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
             {filteredRunners.map((runner) => (<Marker
                 key={`runner-${runner.id}`}
                 coordinate={{
-                  latitude: runner.latitude, longitude: runner.longitude, _}}
+                  latitude: runner.latitude, longitude: runner.longitude}}
                 onPress={() => handleRunnerPress(runner)}
               >
                 <View style={styles.runnerMarker}>
@@ -919,7 +919,7 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
                   key={runner.id}
                   style={[
                     styles.card, { 
-                      backgroundColor: theme.colors.surface, opacity: runner.status === 'available' ? 1 : 0.6, _}
+                      backgroundColor: theme.colors.surface, opacity: runner.status === 'available' ? 1 : 0.6}
                   ]} 
                   mode="outlined"
                   onPress={() => runner.status === 'available' && handleRunnerSelect(runner)}

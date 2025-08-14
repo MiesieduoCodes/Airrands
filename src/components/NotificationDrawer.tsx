@@ -25,7 +25,7 @@ interface NotificationDrawerProps {
 }
 
 const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
-  visible, onClose, notifications, onNotificationPress, onClearAll, _}) => {
+  visible, onClose, notifications, onNotificationPress, onClearAll}) => {
   const { theme } = useTheme();
   const translateX = React.useRef(new Animated.Value(300)).current;
   const opacity = React.useRef(new Animated.Value(0)).current;
