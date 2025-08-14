@@ -80,6 +80,10 @@
         "projectId": "14dab307-2aa2-4812-be99-dfc779091400"
       }
     },
-    "owner": "miesieduocodes"
+    "owner": "miesieduocodes",
+    "platforms": ["android", "ios"],
+    "assetBundlePatterns": [
+      "**/*"
+    ]
   }
 }

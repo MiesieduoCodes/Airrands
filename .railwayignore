@@ -1,0 +1,19 @@
+# Exclude unnecessary files from Railway deployment
+node_modules/
+.expo/
+.expo-shared/
+dist/
+build/
+*.log
+.env.local
+.env.development
+.env.test
+.DS_Store
+*.tsbuildinfo
+coverage/
+.nyc_output/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
