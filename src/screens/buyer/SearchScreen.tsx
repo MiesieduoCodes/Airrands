@@ -180,7 +180,8 @@ const SearchScreen = () => {
     }, 200);
   };
 
-  const renderProduct = ({ item, index }: { item: ProductType; index: number }) => (<Animatable.View 
+  const renderProduct = ({ item, index }: { item: ProductType; index: number }) => (
+    <Animatable.View 
       animation="fadeInUp" 
       delay={index * 50}
       duration={400}
@@ -190,14 +191,7 @@ const SearchScreen = () => {
         activeOpacity={0.9}
         onPress={() => navigation.navigate('ProductDetail', {
           productId: item.id,
-          sellerId: item.sellerId || 'unknown',
           productName: item.name,
-          price: item.price,
-          description: item.description || 'No description available',
-          image: item.image,
-          rating: item.rating,
-          reviews: 0,
-          category: item.category,
         })}
         style={styles.productTouchable}
       >
@@ -220,7 +214,7 @@ const SearchScreen = () => {
             <View style={styles.productHeader}>
               <Text 
                 variant="titleMedium" 
-                style={[styles.productName, { color: theme.colors.onSurface }]} 
+                style={[styles.productTitle, { color: theme.colors.onSurface }]} 
                 numberOfLines={2}
               >
                 {item.name}
@@ -235,7 +229,7 @@ const SearchScreen = () => {
                   variant="labelMedium" 
                   style={[styles.ratingText, { color: theme.colors.onSurfaceVariant }]}
                 >
-                  {item.rating.toFixed(1)}
+                  {item.rating ? item.rating.toFixed(1) : 'N/A'}
                 </Text>
               </View>
             </View>
@@ -250,7 +244,7 @@ const SearchScreen = () => {
             
             <View style={styles.priceContainer}>
               <Text variant="titleLarge" style={[styles.price, { color: theme.colors.primary }]}>
-                ₦{item.price.toLocaleString()}
+                ₦{item.price ? item.price.toLocaleString() : 'N/A'}
               </Text>
               <IconButton
                 icon="heart-outline"
@@ -313,7 +307,7 @@ const SearchScreen = () => {
                   variant="labelMedium" 
                   style={[styles.ratingText, { color: theme.colors.onSurfaceVariant }]}
                 >
-                  {item.rating.toFixed(1)}
+                  {item.rating ? item.rating.toFixed(1) : 'N/A'}
                 </Text>
               </View>
             </View>
