@@ -5,6 +5,7 @@ import {
   ScrollView, 
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { 
   Modal, 
@@ -15,12 +16,16 @@ import {
   Chip,
   Divider,
   IconButton,
+  Snackbar,
 } from 'react-native-paper';
 import { COLORS } from '../constants/colors';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import * as Location from 'expo-location';
 import { haversineDistance } from '../utils/distance';
+import { db } from '../config/firebase';
+import firebase from 'firebase/compat/app';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ErrandRequestModalProps {
   visible: boolean;
@@ -45,6 +50,7 @@ const ErrandRequestModal: React.FC<ErrandRequestModalProps> = ({
   visible, onDismiss, onSubmit, onPaymentRequired, loading = false
 }) => {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [formData, setFormData] = useState<ErrandRequestData>({
     title: '',
     description: '',
@@ -57,6 +63,9 @@ const ErrandRequestModal: React.FC<ErrandRequestModalProps> = ({
   });
 
   const [errors, setErrors] = useState<Partial<ErrandRequestData>>({});
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const [calculating, setCalculating] = useState(false);
   const [distance, setDistance] = useState<number | null>(null);
@@ -85,12 +94,16 @@ const ErrandRequestModal: React.FC<ErrandRequestModalProps> = ({
       newErrors.title = 'Title is required';
     } else if (formData.title.trim().length < 5) {
       newErrors.title = 'Title must be at least 5 characters';
+    } else if (formData.title.trim().length > 100) {
+      newErrors.title = 'Title cannot exceed 100 characters';
     }
     
     if (!formData.description.trim()) {
       newErrors.description = 'Description is required';
     } else if (formData.description.trim().length < 10) {
       newErrors.description = 'Description must be at least 10 characters';
+    } else if (formData.description.trim().length > 500) {
+      newErrors.description = 'Description cannot exceed 500 characters';
     }
     
     if (!formData.category) {
@@ -99,10 +112,14 @@ const ErrandRequestModal: React.FC<ErrandRequestModalProps> = ({
     
     if (!formData.pickupLocation.trim()) {
       newErrors.pickupLocation = 'Pickup location is required';
+    } else if (formData.pickupLocation.trim().length < 5) {
+      newErrors.pickupLocation = 'Pickup location must be at least 5 characters';
     }
     
     if (!formData.dropoffLocation.trim()) {
       newErrors.dropoffLocation = 'Dropoff location is required';
+    } else if (formData.dropoffLocation.trim().length < 5) {
+      newErrors.dropoffLocation = 'Dropoff location must be at least 5 characters';
     }
     
     if (!formData.budget.trim()) {
@@ -116,6 +133,11 @@ const ErrandRequestModal: React.FC<ErrandRequestModalProps> = ({
       }
     }
 
+    // Check if locations are the same
+    if (formData.pickupLocation.trim().toLowerCase() === formData.dropoffLocation.trim().toLowerCase()) {
+      newErrors.dropoffLocation = 'Pickup and dropoff locations cannot be the same';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -127,28 +149,52 @@ const ErrandRequestModal: React.FC<ErrandRequestModalProps> = ({
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateForm()) {
-      // If payment callback is provided, trigger payment flow
-      if (onPaymentRequired) {
-        const amount = parseFloat(formData.budget);
-        onPaymentRequired(formData, amount);
-      } else {
-        // Fallback to original submit behavior
-        onSubmit(formData);
+      setIsSubmitting(true);
+      try {
+        // Save to Firebase first
+        const saved = await saveErrandToFirebase(formData);
+        
+        if (saved) {
+          // If payment callback is provided, trigger payment flow
+          if (onPaymentRequired) {
+            const amount = parseFloat(formData.budget);
+            onPaymentRequired(formData, amount);
+          } else {
+            // Fallback to original submit behavior
+            onSubmit(formData);
+          }
+          
+          // Reset form
+          setFormData({
+            title: '',
+            description: '',
+            category: '',
+            urgency: 'medium',
+            budget: '',
+            pickupLocation: '',
+            dropoffLocation: '',
+            estimatedTime: '',
+          });
+          setErrors({});
+          setDistance(null);
+          
+          // Show success message
+          setSnackbarMessage('Errand request submitted successfully!');
+          setSnackbarVisible(true);
+          
+          // Close modal after success
+          setTimeout(() => {
+            onDismiss();
+          }, 1500);
+        }
+      } catch (error) {
+        setSnackbarMessage('Failed to submit errand. Please try again.');
+        setSnackbarVisible(true);
+      } finally {
+        setIsSubmitting(false);
       }
-      
-      setFormData({
-        title: '',
-        description: '',
-        category: '',
-        urgency: 'medium',
-        budget: '',
-        pickupLocation: '',
-        dropoffLocation: '',
-        estimatedTime: '',
-      });
-      setErrors({});
     }
   };
 
@@ -159,6 +205,63 @@ const ErrandRequestModal: React.FC<ErrandRequestModalProps> = ({
            formData.pickupLocation.trim() && 
            formData.dropoffLocation.trim() && 
            formData.budget.trim();
+  };
+
+  // Save errand data to Firebase
+  const saveErrandToFirebase = async (errandData: ErrandRequestData) => {
+    if (!user?.uid) {
+      setSnackbarMessage('User not authenticated. Please log in again.');
+      setSnackbarVisible(true);
+      return false;
+    }
+
+    try {
+      // Get coordinates for both locations
+      const [pickupResults, dropoffResults] = await Promise.all([
+        Location.geocodeAsync(errandData.pickupLocation),
+        Location.geocodeAsync(errandData.dropoffLocation),
+      ]);
+
+      const pickupCoordinates = pickupResults?.[0] ? {
+        latitude: pickupResults[0].latitude,
+        longitude: pickupResults[0].longitude,
+      } : null;
+
+      const dropoffCoordinates = dropoffResults?.[0] ? {
+        latitude: dropoffResults[0].latitude,
+        longitude: dropoffResults[0].longitude,
+      } : null;
+
+      const errandDoc = {
+        ...errandData,
+        userId: user.uid,
+        userEmail: user.email,
+        userName: user.displayName || 'Unknown User',
+        status: 'pending',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        distance: distance || 0,
+        pickupCoordinates,
+        dropoffCoordinates,
+        runnerId: null,
+        runnerName: null,
+        runnerImage: null,
+        acceptedAt: null,
+        completedAt: null,
+        paymentStatus: 'pending',
+        paymentReference: null,
+        urgency: errandData.urgency,
+        category: errandData.category,
+        estimatedTime: errandData.estimatedTime || null,
+      };
+
+      await db.collection('errands').add(errandDoc);
+      return true;
+    } catch (error) {
+      setSnackbarMessage('Failed to save errand. Please try again.');
+      setSnackbarVisible(true);
+      return false;
+    }
   };
 
   // Add effect to calculate distance and price when locations change
@@ -222,7 +325,6 @@ const ErrandRequestModal: React.FC<ErrandRequestModalProps> = ({
           const rawPrice = Math.max(500, Math.round(dist * 1000));
           setFormData((prev) => ({ ...prev, budget: rawPrice.toString() }));
         } catch (e) {
-          console.error('Geocoding error:', e);
           setGeoError('Failed to calculate distance. Please check your internet connection and try again.');
           setDistance(null);
           setFormData((prev) => ({ ...prev, budget: '' }));
@@ -514,17 +616,31 @@ const ErrandRequestModal: React.FC<ErrandRequestModalProps> = ({
                         : theme.colors.surfaceDisabled,
                     }
                   ]}
-                  disabled={!isFormValid() || loading}
-                  loading={loading}
+                  disabled={!isFormValid() || loading || isSubmitting}
+                  loading={loading || isSubmitting}
                   labelStyle={{ color: theme.colors.onPrimary }}
                 >
-                  {loading ? 'Sending...' : 'Request Errand'}
+                  {loading || isSubmitting ? 'Sending...' : 'Request Errand'}
                 </Button>
               </View>
             </ScrollView>
           </KeyboardAvoidingView>
         </View>
       </Modal>
+      
+      {/* Success/Error Snackbar */}
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={3000}
+        style={{ backgroundColor: theme.colors.primary }}
+        action={{
+          label: 'OK',
+          onPress: () => setSnackbarVisible(false),
+        }}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </Portal>
   );
 };
@@ -536,11 +652,10 @@ const styles = StyleSheet.create({
     margin: 0,
   },
   modalContent: {
-    width: '90%',
-    maxHeight: '90%',
-    minHeight: 400,
-    minWidth: 320,
-    borderRadius: 16,
+    width: '100%',
+    height: '100%',
+    margin: 0,
+    borderRadius: 0,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: {
