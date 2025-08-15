@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useTheme } from '../contexts/ThemeContext';
@@ -8,20 +8,26 @@ interface NotificationBadgeProps {
   size?: 'small' | 'medium' | 'large';
 }
 
-const NotificationBadge: React.FC<NotificationBadgeProps> = ({ 
+// Type for valid sizes
+type BadgeSize = 'small' | 'medium' | 'large';
+
+const NotificationBadge: React.FC<NotificationBadgeProps> = memo(({ 
   count, size = 'medium' 
 }) => {
   const { theme } = useTheme();
 
-  if (count === 0) return null;
+  // Early return for invalid count
+  if (count <= 0) return null;
 
-  const sizeMap = {
+  const sizeMap: Record<BadgeSize, { width: number; height: number; fontSize: number }> = {
     small: { width: 16, height: 16, fontSize: 10 },
     medium: { width: 20, height: 20, fontSize: 12 },
     large: { width: 24, height: 24, fontSize: 14 },
   };
 
-  const badgeSize = sizeMap?.[size];
+  // Validate size and provide fallback
+  const validSize: BadgeSize = sizeMap[size] ? size : 'medium';
+  const badgeSize = sizeMap[validSize];
 
   return (
     <View
@@ -33,6 +39,9 @@ const NotificationBadge: React.FC<NotificationBadgeProps> = ({
           backgroundColor: theme.colors.error,
         },
       ]}
+      accessibilityRole="image"
+      accessibilityLabel={`${count} unread notifications`}
+      accessibilityHint="Shows the number of unread notifications"
     >
       <Text
         style={[
@@ -42,12 +51,15 @@ const NotificationBadge: React.FC<NotificationBadgeProps> = ({
             color: theme.colors.onError,
           },
         ]}
+        accessibilityRole="text"
       >
-        {count > 99 ? '99+' : count.toString()}
+        {count > 999 ? '999+' : count > 99 ? '99+' : count.toString()}
       </Text>
     </View>
   );
-};
+});
+
+NotificationBadge.displayName = 'NotificationBadge';
 
 const styles = StyleSheet.create({
   badge: {
@@ -58,10 +70,19 @@ const styles = StyleSheet.create({
     top: -5,
     right: -5,
     minWidth: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
+    elevation: 3,
   },
   text: {
     fontWeight: 'bold',
     textAlign: 'center',
+    lineHeight: 14,
   },
 });
 
