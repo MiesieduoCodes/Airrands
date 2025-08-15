@@ -245,19 +245,26 @@ const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
             <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>
               Notifications
             </Text>
-            {notifications.length > 0 && (
+            {realTimeNotifications.length > 0 && (
               <Text variant="labelSmall" style={[styles.notificationCount, { color: theme.colors.onSurfaceVariant }]}>
-                {notifications.filter(n => !n.isRead).length} new
+                {realTimeNotifications.filter(n => !n.isRead).length} new
               </Text>
             )}
           </View>
           <View style={styles.headerActions}>
-            {notifications.length > 0 && onClearAll && (
-              <TouchableOpacity onPress={onClearAll} style={styles.clearButton}>
-                <Text variant="labelSmall" style={{ color: theme.colors.primary }}>
-                  Clear all
-                </Text>
-              </TouchableOpacity>
+            {realTimeNotifications.length > 0 && (
+              <>
+                <TouchableOpacity onPress={markAllAsRead} style={styles.clearButton}>
+                  <Text variant="labelSmall" style={{ color: theme.colors.primary }}>
+                    Mark all read
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleClearAll} style={styles.clearButton}>
+                  <Text variant="labelSmall" style={{ color: theme.colors.error }}>
+                    Clear all
+                  </Text>
+                </TouchableOpacity>
+              </>
             )}
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <MaterialCommunityIcons 
@@ -491,6 +498,39 @@ const styles = StyleSheet.create({
   divider: {
     height: StyleSheet.hairlineWidth,
     marginHorizontal: 16,
+  },
+  loadingState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  loadingText: {
+    marginTop: 16,
+    opacity: 0.7,
+  },
+  errorState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  errorIcon: {
+    marginBottom: 16,
+    opacity: 0.8,
+  },
+  errorTitle: {
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  errorText: {
+    textAlign: 'center',
+    maxWidth: 240,
+    opacity: 0.7,
+    marginBottom: 16,
+  },
+  retryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
 });
 
