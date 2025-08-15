@@ -535,3 +535,374 @@ const styles = StyleSheet.create({
 });
 
 export default NotificationDrawer;
+                          marginRight: 12,
+
+                        }}
+
+                        color={getNotificationIconColor(notification.type)}
+
+                      />
+
+                      <View style={styles.notificationInfo}>
+
+                        <View style={styles.notificationTitleRow}>
+
+                          <Text 
+
+                            variant="bodyMedium" 
+
+                            style={[
+
+                              styles.notificationTitle, 
+
+                              { 
+
+                                color: theme.colors.onSurface,
+
+                                fontWeight: notification.isRead ? 'normal' : '600',
+
+                              }
+
+                            ]}
+
+                            numberOfLines={1}
+
+                          >
+
+                            {notification.title}
+
+                          </Text>
+
+                          {!notification.isRead && (
+
+                            <View style={[styles.unreadDot, { backgroundColor: theme.colors.primary }]} />
+
+                          )}
+
+                        </View>
+
+                        <Text 
+
+                          variant="bodySmall" 
+
+                          style={[
+
+                            styles.notificationMessage, 
+
+                            { 
+
+                              color: theme.colors.onSurfaceVariant,
+
+                              opacity: notification.isRead ? 0.8 : 1,
+
+                            }
+
+                          ]}
+
+                          numberOfLines={2}
+
+                        >
+
+                          {notification.message}
+
+                        </Text>
+
+                      </View>
+
+                    </View>
+
+                    <Text 
+
+                      variant="labelSmall" 
+
+                      style={[
+
+                        styles.notificationTime, 
+
+                        { 
+
+                          color: theme.colors.onSurfaceVariant,
+
+                          alignSelf: 'flex-end',
+
+                        }
+
+                      ]}
+
+                    >
+
+                      {notification.time}
+
+                    </Text>
+
+                  </View>
+
+                </TouchableOpacity>
+
+                {index < notifications.length - 1 && (
+
+                  <View style={[styles.divider, { backgroundColor: theme.colors.outlineVariant }]} />
+
+                )}
+
+              </React.Fragment>
+
+            ))
+
+          )}
+
+        </ScrollView>
+
+      </Animated.View>
+
+    </>
+
+  );
+
+};
+
+
+
+const styles = StyleSheet.create({
+
+  overlay: {
+
+    position: 'absolute',
+
+    top: 0,
+
+    left: 0,
+
+    right: 0,
+
+    bottom: 0,
+
+    zIndex: 1000,
+
+  },
+
+  overlayTouch: {
+
+    flex: 1,
+
+  },
+
+  drawer: {
+
+    position: 'absolute',
+
+    top: 60,
+
+    right: 16,
+
+    width: Math.min(width - 32, 380),
+
+    maxHeight: 500,
+
+    borderRadius: 16,
+
+    elevation: 8,
+
+    shadowOffset: { width: 0, height: 4 },
+
+    shadowOpacity: 0.1,
+
+    shadowRadius: 12,
+
+    zIndex: 1000,
+
+  },
+
+  header: {
+
+    flexDirection: 'row',
+
+    justifyContent: 'space-between',
+
+    alignItems: 'center',
+
+    padding: 16,
+
+    borderBottomWidth: StyleSheet.hairlineWidth,
+
+  },
+
+  headerLeft: {
+
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+  },
+
+  headerActions: {
+
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+  },
+
+  notificationCount: {
+
+    marginLeft: 8,
+
+    paddingHorizontal: 6,
+
+    paddingVertical: 2,
+
+    borderRadius: 10,
+
+    backgroundColor: 'rgba(0,0,0,0.1)',
+
+  },
+
+  clearButton: {
+
+    padding: 4,
+
+    marginRight: 12,
+
+  },
+
+  closeButton: {
+
+    padding: 4,
+
+  },
+
+  emptyContainer: {
+
+    flexGrow: 1,
+
+    justifyContent: 'center',
+
+  },
+
+  emptyState: {
+
+    alignItems: 'center',
+
+    justifyContent: 'center',
+
+    padding: 32,
+
+  },
+
+  emptyIcon: {
+
+    marginBottom: 16,
+
+    opacity: 0.6,
+
+  },
+
+  emptyTitle: {
+
+    marginBottom: 4,
+
+    fontWeight: '500',
+
+  },
+
+  emptyText: {
+
+    textAlign: 'center',
+
+    maxWidth: 240,
+
+    opacity: 0.6,
+
+  },
+
+  content: {
+
+    maxHeight: 400,
+
+  },
+
+  notificationItem: {
+
+    padding: 16,
+
+    paddingLeft: 13, // account for border
+
+  },
+
+  notificationContent: {
+
+    flex: 1,
+
+  },
+
+  notificationHeader: {
+
+    flexDirection: 'row',
+
+    alignItems: 'flex-start',
+
+    marginBottom: 4,
+
+  },
+
+  notificationInfo: {
+
+    flex: 1,
+
+  },
+
+  notificationTitleRow: {
+
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    justifyContent: 'space-between',
+
+    marginBottom: 2,
+
+  },
+
+  notificationTitle: {
+
+    flex: 1,
+
+  },
+
+  notificationMessage: {
+
+    lineHeight: 18,
+
+  },
+
+  notificationTime: {
+
+    marginTop: 4,
+
+  },
+
+  unreadDot: {
+
+    width: 8,
+
+    height: 8,
+
+    borderRadius: 4,
+
+    marginLeft: 4,
+
+  },
+
+  divider: {
+
+    height: StyleSheet.hairlineWidth,
+
+    marginHorizontal: 16,
+
+  },
+
+});
+
+
+
+export default NotificationDrawer;

@@ -699,8 +699,8 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }: ProductsS
         backgroundColor={theme.colors.surface}
         translucent={false}
       />
-      {/* Modern Header */}
-      <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
+        {/* Modern Header */}
+        <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
           <View style={styles.headerContent}>
             <View style={styles.headerLeft}>
               <Text variant="headlineLarge" style={[styles.headerTitle, { color: theme.colors.onSurface }]}>
