@@ -1,8 +1,11 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Animated, Dimensions } from 'react-native';
-import { Text, Avatar } from 'react-native-paper';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Animated, Dimensions, Alert } from 'react-native';
+import { Text, Avatar, ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../config/firebase';
+import firebase from 'firebase/compat/app';
 
 const { width } = Dimensions.get('window');
 
@@ -11,9 +14,13 @@ interface Notification {
   title: string;
   message: string;
   time: string;
+  timestamp: firebase.firestore.Timestamp;
   type: 'order' | 'message' | 'system' | 'payment' | 'promo';
   isRead: boolean;
   avatar?: string;
+  userId: string;
+  relatedId?: string; // orderId, messageId, etc.
+  priority?: 'low' | 'medium' | 'high';
 }
 
 interface NotificationDrawerProps {
@@ -22,11 +29,18 @@ interface NotificationDrawerProps {
   notifications: Notification[];
   onNotificationPress: (notification: Notification) => void;
   onClearAll?: () => void;
+  onRefresh?: () => void;
 }
 
 const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
-  visible, onClose, notifications, onNotificationPress, onClearAll}) => {
+  visible, onClose, notifications, onNotificationPress, onClearAll, onRefresh
+}) => {
   const { theme } = useTheme();
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [realTimeNotifications, setRealTimeNotifications] = useState<Notification[]>([]);
+  
   const translateX = React.useRef(new Animated.Value(300)).current;
   const opacity = React.useRef(new Animated.Value(0)).current;
 
@@ -58,6 +72,112 @@ const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
       ]).start();
     }
   }, [visible]);
+
+  // Real-time notifications listener
+  useEffect(() => {
+    if (!user?.uid || !visible) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    const unsubscribe = db
+      .collection('notifications')
+      .where('userId', '==', user.uid)
+      .orderBy('timestamp', 'desc')
+      .limit(50)
+      .onSnapshot(
+        (snapshot) => {
+          const notifications = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as Notification[];
+          
+          setRealTimeNotifications(notifications);
+          setIsLoading(false);
+        },
+        (error) => {
+          console.error('Error fetching notifications:', error);
+          setError('Failed to load notifications');
+          setIsLoading(false);
+        }
+      );
+
+    return () => unsubscribe();
+  }, [user?.uid, visible]);
+
+  // Mark notification as read
+  const markAsRead = async (notificationId: string) => {
+    try {
+      await db.collection('notifications').doc(notificationId).update({
+        isRead: true,
+        readAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  // Mark all notifications as read
+  const markAllAsRead = async () => {
+    if (!user?.uid) return;
+    
+    try {
+      setIsLoading(true);
+      const batch = db.batch();
+      
+      const unreadNotifications = realTimeNotifications.filter(n => !n.isRead);
+      unreadNotifications.forEach(notification => {
+        const ref = db.collection('notifications').doc(notification.id);
+        batch.update(ref, {
+          isRead: true,
+          readAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+      });
+      
+      await batch.commit();
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      Alert.alert('Error', 'Failed to mark all notifications as read');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Clear all notifications
+  const handleClearAll = async () => {
+    if (!user?.uid) return;
+    
+    Alert.alert(
+      'Clear All Notifications',
+      'Are you sure you want to clear all notifications? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsLoading(true);
+              const batch = db.batch();
+              
+              realTimeNotifications.forEach(notification => {
+                const ref = db.collection('notifications').doc(notification.id);
+                batch.delete(ref);
+              });
+              
+              await batch.commit();
+              if (onClearAll) onClearAll();
+            } catch (error) {
+              console.error('Error clearing notifications:', error);
+              Alert.alert('Error', 'Failed to clear notifications');
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const getNotificationIcon = (type: string) => {
     const icons = {

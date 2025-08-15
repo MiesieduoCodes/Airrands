@@ -670,86 +670,86 @@ const BusinessSettings: React.FC<BusinessSettingsProps> = (props: BusinessSettin
           contentContainerStyle={[styles.hoursModal, { backgroundColor: theme.colors.surface }]}
         >
           <View style={styles.fullScreenContainer}>
-            <View style={styles.modalHeader}>
-              <Text variant="titleLarge" style={[styles.modalTitle, { color: theme.colors.onSurface }]}>
-                Edit {selectedDay?.day} Hours
+          <View style={styles.modalHeader}>
+            <Text variant="titleLarge" style={[styles.modalTitle, { color: theme.colors.onSurface }]}>
+              Edit {selectedDay?.day} Hours
+            </Text>
+            <IconButton
+              icon="close"
+              size={24}
+              onPress={() => setHoursModalVisible(false)}
+              iconColor={theme.colors.onSurfaceVariant}
+            />
+          </View>
+          
+          <View style={styles.hoursForm}>
+            <View style={styles.hoursFormRow}>
+              <Text variant="bodyMedium" style={[styles.formLabel, { color: theme.colors.onSurface }]}>
+                Open on {selectedDay?.day}?
               </Text>
-              <IconButton
-                icon="close"
-                size={24}
-                onPress={() => setHoursModalVisible(false)}
-                iconColor={theme.colors.onSurfaceVariant}
+              <Switch
+                value={hoursFormData.isOpen}
+                onValueChange={(value) => setHoursFormData(prev => ({ ...prev, isOpen: value }))}
+                color={theme.colors.primary}
               />
             </View>
             
-            <View style={styles.hoursForm}>
-              <View style={styles.hoursFormRow}>
-                <Text variant="bodyMedium" style={[styles.formLabel, { color: theme.colors.onSurface }]}>
-                  Open on {selectedDay?.day}?
-                </Text>
-                <Switch
-                  value={hoursFormData.isOpen}
-                  onValueChange={(value) => setHoursFormData(prev => ({ ...prev, isOpen: value }))}
-                  color={theme.colors.primary}
-                />
-              </View>
-              
-              {hoursFormData.isOpen && (<>
-                  <View style={styles.hoursFormRow}>
-                    <Text variant="bodyMedium" style={[styles.formLabel, { color: theme.colors.onSurface }]}>
-                      Opening Time
-                    </Text>
-                    <TextInput
-                      value={hoursFormData.openTime}
-                      onChangeText={(text) => setHoursFormData(prev => ({ ...prev, openTime: text }))}
-                      mode="outlined"
-                      style={styles.timeInput}
-                      left={<TextInput.Icon icon="clock-outline" />}
-                    />
-                  </View>
-                  
-                  <View style={styles.hoursFormRow}>
-                    <Text variant="bodyMedium" style={[styles.formLabel, { color: theme.colors.onSurface }]}>
-                      Closing Time
-                    </Text>
-                    <TextInput
-                      value={hoursFormData.closeTime}
-                      onChangeText={(text) => setHoursFormData(prev => ({ ...prev, closeTime: text }))}
-                      mode="outlined"
-                      style={styles.timeInput}
-                      left={<TextInput.Icon icon="clock-outline" />}
-                    />
-                  </View>
-                  
-                  <View style={styles.hoursFormRow}>
-                    <Text variant="bodyMedium" style={[styles.formLabel, { color: theme.colors.onSurface }]}>
-                      Special Hours
-                    </Text>
-                    <Switch
-                      value={hoursFormData.isSpecialHours}
-                      onValueChange={(value) => setHoursFormData(prev => ({ ...prev, isSpecialHours: value }))}
-                      color={theme.colors.primary}
-                    />
-                  </View>
-                </>
-              )}
-            </View>
-            
-            <View style={styles.modalActions}>
-              <Button
-                mode="outlined"
-                onPress={() => setHoursModalVisible(false)}
-                style={styles.modalButton}
-              >
-                Cancel
-              </Button>
-              <Button
-                mode="contained"
-                onPress={handleSaveHours}
-                style={[styles.modalButton, { backgroundColor: theme.colors.primary }]}
-              >
-                Save Hours
-              </Button>
+            {hoursFormData.isOpen && (<>
+                <View style={styles.hoursFormRow}>
+                  <Text variant="bodyMedium" style={[styles.formLabel, { color: theme.colors.onSurface }]}>
+                    Opening Time
+                  </Text>
+                  <TextInput
+                    value={hoursFormData.openTime}
+                    onChangeText={(text) => setHoursFormData(prev => ({ ...prev, openTime: text }))}
+                    mode="outlined"
+                    style={styles.timeInput}
+                    left={<TextInput.Icon icon="clock-outline" />}
+                  />
+                </View>
+                
+                <View style={styles.hoursFormRow}>
+                  <Text variant="bodyMedium" style={[styles.formLabel, { color: theme.colors.onSurface }]}>
+                    Closing Time
+                  </Text>
+                  <TextInput
+                    value={hoursFormData.closeTime}
+                    onChangeText={(text) => setHoursFormData(prev => ({ ...prev, closeTime: text }))}
+                    mode="outlined"
+                    style={styles.timeInput}
+                    left={<TextInput.Icon icon="clock-outline" />}
+                  />
+                </View>
+                
+                <View style={styles.hoursFormRow}>
+                  <Text variant="bodyMedium" style={[styles.formLabel, { color: theme.colors.onSurface }]}>
+                    Special Hours
+                  </Text>
+                  <Switch
+                    value={hoursFormData.isSpecialHours}
+                    onValueChange={(value) => setHoursFormData(prev => ({ ...prev, isSpecialHours: value }))}
+                    color={theme.colors.primary}
+                  />
+                </View>
+              </>
+            )}
+          </View>
+          
+          <View style={styles.modalActions}>
+            <Button
+              mode="outlined"
+              onPress={() => setHoursModalVisible(false)}
+              style={styles.modalButton}
+            >
+              Cancel
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleSaveHours}
+              style={[styles.modalButton, { backgroundColor: theme.colors.primary }]}
+            >
+              Save Hours
+            </Button>
             </View>
           </View>
         </Modal>
@@ -763,43 +763,43 @@ const BusinessSettings: React.FC<BusinessSettingsProps> = (props: BusinessSettin
           contentContainerStyle={[styles.galleryModal, { backgroundColor: theme.colors.surface }]}
         >
           <View style={styles.fullScreenContainer}>
-            <View style={styles.modalHeader}>
-              <Text variant="titleLarge" style={[styles.modalTitle, { color: theme.colors.onSurface }]}>
-                Gallery Management
-              </Text>
-              <IconButton
-                icon="close"
-                size={24}
-                onPress={() => setGalleryModalVisible(false)}
-                iconColor={theme.colors.onSurfaceVariant}
-              />
+          <View style={styles.modalHeader}>
+            <Text variant="titleLarge" style={[styles.modalTitle, { color: theme.colors.onSurface }]}>
+              Gallery Management
+            </Text>
+            <IconButton
+              icon="close"
+              size={24}
+              onPress={() => setGalleryModalVisible(false)}
+              iconColor={theme.colors.onSurfaceVariant}
+            />
+          </View>
+          
+          <ScrollView style={styles.galleryContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.galleryGrid}>
+              {profileFormData.gallery?.map((image, index) => (<View key={index} style={styles.galleryItem}>
+                  <Image source={{ uri: image }} style={styles.galleryImage} />
+                  <IconButton
+                    icon="close-circle"
+                    size={24}
+                    onPress={() => removeGalleryImage(index)}
+                    iconColor={COLORS.error}
+                    style={styles.removeGalleryButton}
+                  />
+                </View>
+              ))}
+              
+              <TouchableOpacity 
+                style={[styles.addGalleryButton, { borderColor: theme.colors.primary }]}
+                onPress={() => pickImage('gallery')}
+              >
+                <MaterialIcons name="add-photo-alternate" size={32} color={theme.colors.primary} />
+                <Text style={[styles.addGalleryText, { color: theme.colors.primary }]}>
+                  Add Image
+                </Text>
+              </TouchableOpacity>
             </View>
-            
-            <ScrollView style={styles.galleryContent} showsVerticalScrollIndicator={false}>
-              <View style={styles.galleryGrid}>
-                {profileFormData.gallery?.map((image, index) => (<View key={index} style={styles.galleryItem}>
-                    <Image source={{ uri: image }} style={styles.galleryImage} />
-                    <IconButton
-                      icon="close-circle"
-                      size={24}
-                      onPress={() => removeGalleryImage(index)}
-                      iconColor={COLORS.error}
-                      style={styles.removeGalleryButton}
-                    />
-                  </View>
-                ))}
-                
-                <TouchableOpacity 
-                  style={[styles.addGalleryButton, { borderColor: theme.colors.primary }]}
-                  onPress={() => pickImage('gallery')}
-                >
-                  <MaterialIcons name="add-photo-alternate" size={32} color={theme.colors.primary} />
-                  <Text style={[styles.addGalleryText, { color: theme.colors.primary }]}>
-                    Add Image
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
+          </ScrollView>
           </View>
         </Modal>
       </Portal>

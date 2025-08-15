@@ -75,7 +75,10 @@
       "FIREBASE_MESSAGING_SENDER_ID": "973554900024",
       "FIREBASE_APP_ID": "1:973554900024:web:0a2746c5599f45640f1acd",
       "FIREBASE_MEASUREMENT_ID": "G-QJCXMG81J8",
-      "PAYSTACK_PUBLIC_KEY": "REPLACE_WITH_PRODUCTION_KEY"
+      "PAYSTACK_PUBLIC_KEY": "REPLACE_WITH_PRODUCTION_KEY",
+      "eas": {
+        "projectId": "9d65d65e-1d0e-44e1-8175-eebf4bddea45"
+      }
     },
     "owner": "miesieduocodes"
   }
