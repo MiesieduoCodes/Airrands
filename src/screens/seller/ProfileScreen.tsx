@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Image, SafeAreaView, Dimensions} from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Image, SafeAreaView, Dimensions, Platform, StatusBar} from 'react-native';
 import { Text, Avatar, List, Switch, Button, Chip, Surface, Modal, Portal} from 'react-native-paper';
 import { COLORS } from '../../constants/colors';
 import { SellerNavigationProp } from '../../navigation/types';
@@ -234,6 +234,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar 
+        barStyle="light-content" 
+        backgroundColor="transparent"
+        translucent={true}
+      />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Business Header */}
         <Animatable.View animation="fadeInDown" duration={800} style={styles.coverContainer}>
@@ -734,7 +739,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingTop: Platform.OS === 'ios' ? 20 : 16,
     paddingBottom: 20,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,

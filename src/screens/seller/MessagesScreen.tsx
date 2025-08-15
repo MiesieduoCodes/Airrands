@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, FlatList, SafeAreaView, RefreshControl } from 'react-native';
+import { View, StyleSheet, FlatList, SafeAreaView, RefreshControl, StatusBar, Platform } from 'react-native';
 import { Text, List, Avatar, Searchbar, Badge, Surface } from 'react-native-paper';
 import { COLORS } from '../../constants/colors';
 import { SellerNavigationProp } from '../../navigation/types';
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingTop: Platform.OS === 'ios' ? 20 : 16,
     paddingBottom: 24,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,

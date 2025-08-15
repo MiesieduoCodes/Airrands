@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Dimensions, Platform, StatusBar } from 'react-native';
 import { Text, Card, Button, Chip, Divider, Portal, Dialog, ProgressBar, Searchbar, Badge, Checkbox, Surface, IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
@@ -397,6 +397,11 @@ const OrdersScreen: React.FC<OrdersScreenProps> = ({ navigation }: OrdersScreenP
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor={theme.colors.surface}
+        translucent={false}
+      />
       {/* Enhanced Header */}
       <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
         <View style={styles.headerContent}>
@@ -625,7 +630,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingTop: Platform.OS === 'ios' ? 20 : 16,
     paddingBottom: 20,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,

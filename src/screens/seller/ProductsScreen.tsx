@@ -9,7 +9,9 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
-  Dimensions
+  Dimensions,
+  Platform,
+  StatusBar
 } from 'react-native';
 import { 
   Text, 
@@ -690,9 +692,15 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }: ProductsS
     setRefreshing(false);
   }, [user?.uid]);
 
-  return (<SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        {/* Modern Header */}
-        <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor={theme.colors.surface}
+        translucent={false}
+      />
+      {/* Modern Header */}
+      <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
           <View style={styles.headerContent}>
             <View style={styles.headerLeft}>
               <Text variant="headlineLarge" style={[styles.headerTitle, { color: theme.colors.onSurface }]}>
@@ -1124,7 +1132,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: Platform.OS === 'ios' ? 20 : 16,
     paddingBottom: 24,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
