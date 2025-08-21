@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, SafeAreaView, Alert, ActivityIndicator, Dimensions, Platform } from 'react-native';
 import { Text, Card, Avatar, Divider, Button, ProgressBar, Chip, IconButton, TouchableRipple } from 'react-native-paper';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_DEFAULT, Region } from 'react-native-maps';
 import { useTheme } from '../../contexts/ThemeContext';
 import * as polyline from '@mapbox/polyline';
 import { db } from '../../config/firebase';
@@ -807,7 +807,7 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
               <MapView
                 ref={mapRef}
                 style={styles.map}
-                provider={PROVIDER_GOOGLE}
+                provider={PROVIDER_DEFAULT}
                 initialRegion={mapRegion || {
                   latitude: doc.runnerLocation?.latitude || 0,
                   longitude: doc.runnerLocation?.longitude || 0,

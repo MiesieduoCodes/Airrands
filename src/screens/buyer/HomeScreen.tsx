@@ -18,7 +18,7 @@ import {
   Chip, 
   ActivityIndicator 
 } from 'react-native-paper';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -36,6 +36,7 @@ import { sendPushNotification } from '../../services/notificationService'; // ad
 import { useNotification } from '../../contexts/NotificationContext';
 import { DocumentReference } from 'firebase/firestore';
 import { haversineDistance, formatDistance, calculateAndFormatDistance, isValidCoordinate } from '../../utils/distance';
+import { addSampleData, checkDataExists } from '../../utils/sampleData';
 const PaystackWebView = require('react-native-paystack-webview').default;
 import * as Location from 'expo-location';
 
@@ -271,10 +272,25 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
 
   useEffect(() => {
     const fetchData = async () => {
-        setLoading(true);
+      setLoading(true);
       setError(null);
 
       try {
+        // Check if we have any data in Firebase
+        const dataCheck = await checkDataExists();
+        console.log('Data check result:', dataCheck);
+        
+        // If no stores or runners exist, add sample data
+        if (!dataCheck.hasStores || !dataCheck.hasRunners) {
+          console.log('No data found, adding sample data...');
+          const result = await addSampleData();
+          if (result.success) {
+            console.log('Sample data added successfully');
+          } else {
+            console.error('Failed to add sample data:', result.error);
+          }
+        }
+
         // Fetch stores and products in parallel
         const [storesData, productsData] = await Promise.allSettled([
           getStores(),
@@ -284,6 +300,7 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
         // Handle stores data
         if (storesData.status === 'fulfilled') {
           setStores(storesData.value);
+          console.log('Stores loaded:', storesData.value.length);
         } else {
           console.error('Failed to fetch stores:', storesData.reason);
           setError('Failed to load stores. Please try again.');
@@ -292,6 +309,7 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
         // Handle products data
         if (productsData.status === 'fulfilled') {
           setProducts(productsData.value);
+          console.log('Products loaded:', productsData.value.length);
         } else {
           console.error('Failed to fetch products:', productsData.reason);
           setError('Failed to load products. Please try again.');
@@ -338,18 +356,25 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
     const sellersListener = db.collection('users')
       .where('role', '==', 'seller')
       .onSnapshot((snapshot) => {
+        console.log('Sellers snapshot received:', snapshot.docs.length, 'documents');
+        
         const updatedStores = snapshot.docs.map((doc: any) => {
           const data = doc.data();
+          console.log('Seller data:', doc.id, data);
+          
           // Use actual location data from Firestore, no default coordinates
           const latitude = data.currentLocation?.latitude || data.latitude;
           const longitude = data.currentLocation?.longitude || data.longitude;
           
+          console.log('Seller coordinates:', { latitude, longitude });
+          
           // Only include stores with valid coordinates
           if (!latitude || !longitude || !isValidCoordinate(latitude, longitude)) {
+            console.log('Invalid coordinates for seller:', doc.id);
             return null;
           }
           
-          return {
+          const store = {
             id: doc.id,
             name: data.name || data.displayName || data.businessName || 'Unknown Store',
             image: data.image || data.photoURL || data.avatar || 'https://i.imgur.com/T3zF9bJ.png',
@@ -361,8 +386,12 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
             isOnline: data.isOnline || false,
             lastSeen: data.lastSeen,
           };
+          
+          console.log('Processed store:', store);
+          return store;
         }).filter(store => store !== null); // Remove stores without valid coordinates
         
+        console.log('Final stores array:', updatedStores.length, 'stores');
         setStores(updatedStores);
       }, (error) => {
         console.error('Error listening to sellers:', error);
@@ -372,18 +401,25 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
     const runnersListener = db.collection('users')
       .where('role', '==', 'runner')
       .onSnapshot((snapshot) => {
+        console.log('Runners snapshot received:', snapshot.docs.length, 'documents');
+        
         const updatedRunners = snapshot.docs.map((doc: any) => {
           const data = doc.data();
+          console.log('Runner data:', doc.id, data);
+          
           // Use actual location data from Firestore, no default coordinates
           const latitude = data.currentLocation?.latitude || data.latitude;
           const longitude = data.currentLocation?.longitude || data.longitude;
           
+          console.log('Runner coordinates:', { latitude, longitude });
+          
           // Only include runners with valid coordinates
           if (!latitude || !longitude || !isValidCoordinate(latitude, longitude)) {
+            console.log('Invalid coordinates for runner:', doc.id);
             return null;
           }
           
-          return {
+          const runner = {
             id: doc.id,
             name: data.name || data.displayName || 'Unknown Runner',
             image: data.image || data.photoURL || data.avatar || 'https://i.imgur.com/T3zF9bJ.png',
@@ -398,8 +434,12 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
             experience: data.experience || '1 year',
             deliveries: data.deliveries || 0,
           };
+          
+          console.log('Processed runner:', runner);
+          return runner;
         }).filter(runner => runner !== null); // Remove runners without valid coordinates
         
+        console.log('Final runners array:', updatedRunners.length, 'runners');
         setRunners(updatedRunners);
       }, (error) => {
         console.error('Error listening to runners:', error);
@@ -414,18 +454,50 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
 
   useEffect(() => {
     const getLocation = async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
-        return;
-      }
-
       try {
-        let location = await Location.getCurrentPositionAsync({});
-        setUserLocation({ latitude: location.coords.latitude, longitude: location.coords.longitude });
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setErrorMsg('Permission to access location was denied');
+          console.warn('Location permission denied');
+          return;
+        }
+
+        // Try to get high accuracy location first
+        let location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+          timeout: 10000,
+          maximumAge: 60000,
+        });
+        
+        if (location && location.coords) {
+          setUserLocation({ 
+            latitude: location.coords.latitude, 
+            longitude: location.coords.longitude 
+          });
+          console.log('User location obtained:', location.coords);
+        }
       } catch (error) {
-        setErrorMsg('Error retrieving location');
-        console.error(error);
+        console.error('Error getting location:', error);
+        
+        // Fallback to lower accuracy if high accuracy fails
+        try {
+          let fallbackLocation = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Low,
+            timeout: 15000,
+            maximumAge: 300000,
+          });
+          
+          if (fallbackLocation && fallbackLocation.coords) {
+            setUserLocation({ 
+              latitude: fallbackLocation.coords.latitude, 
+              longitude: fallbackLocation.coords.longitude 
+            });
+            console.log('Fallback location obtained:', fallbackLocation.coords);
+          }
+        } catch (fallbackError) {
+          setErrorMsg('Unable to get your location. Please check location settings.');
+          console.error('Fallback location error:', fallbackError);
+        }
       }
     };
 
@@ -801,7 +873,7 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
             initialRegion={getDefaultRegion()!}
             onMapReady={() => setMapReady(true)}
             loadingEnabled={!mapReady}
-            provider={PROVIDER_GOOGLE}
+            provider={PROVIDER_DEFAULT}
             showsUserLocation={true}
             showsMyLocationButton={true}
             showsCompass={true}
@@ -809,7 +881,7 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
             showsTraffic={false}
             showsBuildings={true}
             showsIndoors={true}
-            mapType="satellite"
+            mapType="standard"
           >
             
             

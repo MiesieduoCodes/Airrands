@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Image, Dimensions, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { Text, TextInput, Button, HelperText, Checkbox } from 'react-native-paper';
+import { Text, TextInput, Button, HelperText, Checkbox, Snackbar } from 'react-native-paper';
 import { COLORS } from '../../constants/colors';
 import { AuthNavigationProp } from '../../navigation/types';
 import { useAuth } from '../../contexts/AuthContext';
@@ -8,6 +8,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { validateField, ValidationRule } from '../../utils/validation';
+import { getFirebaseAuthErrorMessage } from '../../utils/authErrors';
 
 const { width, height } = Dimensions.get('window');
 
@@ -21,26 +22,45 @@ interface FormData {
 }
 
 interface FormErrors {
+  [key: string]: string[];
   email: string[];
   password: string[];
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
+  const { login, getStoredEmail, getRememberMePreference } = useAuth();
+  const { theme } = useTheme();
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
   });
   
-  const [errors, setErrors] = useState<FormErrors>({
-    email: [],
-    password: [],
-  });
+  const [errors, setErrors] = useState<FormErrors>({ email: [], password: [] });
   
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const { login, loading, role } = useAuth();
-  const { theme } = useTheme();
+  const [loading, setLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [showErrorSnackbar, setShowErrorSnackbar] = useState(false);
+
+  // Load stored email and remember me preference on component mount
+  useEffect(() => {
+    const loadStoredData = async () => {
+      try {
+        const storedEmail = await getStoredEmail();
+        const storedRememberMe = await getRememberMePreference();
+        
+        if (storedEmail) {
+          setFormData(prev => ({ ...prev, email: storedEmail }));
+        }
+        setRememberMe(storedRememberMe);
+      } catch (error) {
+        console.error('Error loading stored data:', error);
+      }
+    };
+
+    loadStoredData();
+  }, [getStoredEmail, getRememberMePreference]);
 
   const validationRules: Record<string, ValidationRule> = {
     email: {
@@ -53,54 +73,46 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
   };
 
-  const validateForm = () => {
-    const newErrors: FormErrors = {
-      email: [],
-      password: [],
-    };
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = { email: [], password: [] };
+    let isValid = true;
 
     // Validate each field
     Object.keys(validationRules).forEach(field => {
-      const value = formData?.[field as keyof FormData];
-      const rules = validationRules?.[field];
-      const result = validateField(value, rules);
-      if (newErrors && result.errors) {
-        newErrors[field as keyof FormErrors] = result.errors;
+      const validationResult = validateField(formData[field as keyof FormData], validationRules[field]);
+      if (!validationResult.isValid) {
+        newErrors[field] = validationResult.errors;
+        isValid = false;
       }
     });
 
     setErrors(newErrors);
-    return Object.values(newErrors).every(errorArray => errorArray.length === 0);
+    return isValid;
   };
 
   const handleFieldChange = (field: keyof FormData, value: string) => {
     setFormData((prev: FormData) => ({ ...prev, [field]: value }));
     
     // Clear error when user starts typing
-    if (errors?.[field].length > 0) {
+    if (errors[field] && errors[field].length > 0) {
       setErrors((prev: FormErrors) => ({ ...prev, [field]: [] }));
     }
     setLoginError(null); // Clear error when user starts typing
+    setShowErrorSnackbar(false); // Hide snackbar when user starts typing
   };
 
   const handleLogin = async () => {
     setLoginError(null);
+    setShowErrorSnackbar(false);
+    
     if (!validateForm()) return;
+
     try {
-      await login(formData.email, formData.password);
-      // Navigation handled by RootNavigator
+      await login(formData.email, formData.password, rememberMe);
     } catch (error: any) {
-      if (error.code === 'permission-denied') {
-        setLoginError('You do not have permission to access this resource.');
-      } else if (error.message && error.message.includes('timeout')) {
-        setLoginError('Request timed out. Please try again.');
-      } else if (error.message && error.message.includes('network')) {
-        setLoginError('Network error. Please check your connection.');
-      } else if (error.message) {
-        setLoginError(error.message);
-      } else {
-        setLoginError('An unexpected error occurred. Please try again.');
-      }
+      const userFriendlyMessage = getFirebaseAuthErrorMessage(error);
+      setLoginError(userFriendlyMessage);
+      setShowErrorSnackbar(true);
     }
   };
 
@@ -270,6 +282,26 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             </TouchableOpacity>
           </Animated.View>
         </View>
+
+        {/* Error Snackbar */}
+        <Snackbar
+          visible={showErrorSnackbar}
+          onDismiss={() => setShowErrorSnackbar(false)}
+          duration={6000}
+          action={{
+            label: 'Dismiss',
+            onPress: () => setShowErrorSnackbar(false),
+          }}
+          style={{
+            backgroundColor: theme.colors.errorContainer,
+            marginBottom: 20,
+          }}
+          wrapperStyle={{ bottom: 0 }}
+        >
+          <Text style={{ color: theme.colors.onErrorContainer, fontWeight: '500' }}>
+            {loginError}
+          </Text>
+        </Snackbar>
       </View>
   );
 };

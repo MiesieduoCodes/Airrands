@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, SafeAreaView, Alert, ActivityIndicator, Dimensions } from 'react-native';
 import { Text, Card, Button, ProgressBar, Chip, IconButton, SegmentedButtons } from 'react-native-paper';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../config/firebase';
@@ -459,7 +459,7 @@ const RunnerTrackingScreen: React.FC<RunnerTrackingScreenProps> = ({ route, navi
                   <MapView
                     ref={mapRef}
                     style={styles.map}
-                    provider={PROVIDER_GOOGLE}
+                    provider={PROVIDER_DEFAULT}
                     showsUserLocation={true}
                     showsMyLocationButton={true}
                     showsCompass={true}

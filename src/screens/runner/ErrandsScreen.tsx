@@ -8,7 +8,7 @@ import { RunnerNavigationProp } from '../../navigation/types';
 import * as Animatable from 'react-native-animatable';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { collection, query, where, onSnapshot, Query, DocumentData, QuerySnapshot, QueryDocumentSnapshot, FirestoreError, getDocs } from 'firebase/firestore';
 import * as Location from 'expo-location';
 import { updateRunnerLocation, updateAvailability, getProfile, updateErrandStatus } from '../../services/runnerServices';

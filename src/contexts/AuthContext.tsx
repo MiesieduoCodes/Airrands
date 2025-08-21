@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from '../config/firebase';
 import firebase from 'firebase/compat/app';
 import { UserRole } from '../navigation/types';
+import { setRememberMe, getRememberMe, saveUserEmail, getUserEmail, clearUserCredentials } from '../utils/storage';
 
 interface User {
   uid: string;
@@ -15,7 +16,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   role: UserRole | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (email: string, password: string, role: 'buyer' | 'seller' | 'runner') => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
@@ -25,6 +26,8 @@ interface AuthContextType {
   checkEmailAvailability: (email: string) => Promise<boolean>;
   reloadUser: () => Promise<void>;
   checkAndReloadEmailVerification: () => Promise<boolean>;
+  getStoredEmail: () => Promise<string | null>;
+  getRememberMePreference: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -67,6 +70,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const initializeAuth = async () => {
+      // Set Firebase persistence based on stored preference
+      const rememberMe = await getRememberMe();
+      
+      try {
+        if (rememberMe) {
+          // Enable persistence for "Remember Me" users
+          await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        } else {
+          // Session-only persistence for users who don't want to be remembered
+          await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+        }
+      } catch (error) {
+        console.error('Error setting auth persistence:', error);
+        // Continue with default persistence
+      }
+    };
+
+    initializeAuth();
+
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         // Convert Firebase User to our User interface
@@ -93,9 +116,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return unsubscribe;
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, rememberMe: boolean = true) => {
     setLoading(true);
-    try {  
+    try {
+      // Set persistence before login
+      await setRememberMe(rememberMe);
+      
+      if (rememberMe) {
+        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        // Save email for future logins
+        await saveUserEmail(email);
+      } else {
+        await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+        // Clear stored email if user doesn't want to be remembered
+        await clearUserCredentials();
+      }
+      
       const cred = await auth.signInWithEmailAndPassword(email, password);
       if (cred.user) {
         // Login successful
@@ -184,8 +220,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      // Clear stored credentials on logout
+      await clearUserCredentials();
       await auth.signOut();
-      } catch (error) {
+    } catch (error) {
       console.error('Logout error:', error);
       throw error;
     }
@@ -346,6 +384,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
   };
 
+  const getStoredEmail = async (): Promise<string | null> => {
+    return await getUserEmail();
+  };
+
+  const getRememberMePreference = async (): Promise<boolean> => {
+    return await getRememberMe();
+  };
+
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
@@ -360,6 +406,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkEmailAvailability,
     reloadUser,
     checkAndReloadEmailVerification,
+    getStoredEmail,
+    getRememberMePreference,
   };
 
   return (
