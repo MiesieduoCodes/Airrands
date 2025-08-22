@@ -15,6 +15,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useTheme } from '../../contexts/ThemeContext';
 import { COLORS } from '../../constants/colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
