@@ -37,6 +37,7 @@ import { useNotification } from '../../contexts/NotificationContext';
 import { DocumentReference } from 'firebase/firestore';
 import { haversineDistance, formatDistance, calculateAndFormatDistance, isValidCoordinate } from '../../utils/distance';
 import { addSampleData, checkDataExists } from '../../utils/sampleData';
+// @ts-ignore
 const PaystackWebView = require('react-native-paystack-webview').default;
 import * as Location from 'expo-location';
 
@@ -465,8 +466,6 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
         // Try to get high accuracy location first
         let location = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.High,
-          timeout: 10000,
-          maximumAge: 60000,
         });
         
         if (location && location.coords) {
@@ -483,8 +482,6 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
         try {
           let fallbackLocation = await Location.getCurrentPositionAsync({
             accuracy: Location.Accuracy.Low,
-            timeout: 15000,
-            maximumAge: 300000,
           });
           
           if (fallbackLocation && fallbackLocation.coords) {

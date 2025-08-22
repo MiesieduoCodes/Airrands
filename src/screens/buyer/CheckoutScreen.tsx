@@ -30,7 +30,7 @@ import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { validateField, ValidationRule } from '../../utils/validation';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-// @ts-ignore - PaystackWebView has typing issues
+// @ts-ignore
 const PaystackWebView = require('react-native-paystack-webview').default;
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import * as Location from 'expo-location';

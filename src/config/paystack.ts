@@ -1,8 +1,10 @@
-// PayStack Production Configuration
+// PayStack Configuration
+// For development/testing, use test keys. For production, use live keys.
 
 export const PAYSTACK_CONFIG = {
-  PUBLIC_KEY: process.env.PAYSTACK_PUBLIC_KEY || 'pk_live_your_production_paystack_public_key_here',
-  SECRET_KEY: process.env.PAYSTACK_SECRET_KEY || 'sk_live_your_production_paystack_secret_key_here',
+  // Test keys for development - replace with your actual PayStack test keys
+  PUBLIC_KEY: process.env.PAYSTACK_PUBLIC_KEY || 'pk_test_0123456789abcdef0123456789abcdef01234567',
+  SECRET_KEY: process.env.PAYSTACK_SECRET_KEY || 'sk_test_0123456789abcdef0123456789abcdef01234567',
 };
 
 // Export the public key for components
