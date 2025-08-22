@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, FlatList, Dimensions, TouchableOpacity, Image } from 'react-native';
 import { Text, Button } from 'react-native-paper';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthNavigationProp } from '../../navigation/types';
+import { hasViewedOnboarding, setOnboardingViewed } from '../../utils/storage';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -137,13 +137,13 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
   useEffect(() => {
     const checkOnboardingStatus = async () => {
       try {
-        const value = await AsyncStorage.getItem('@viewedOnboarding');
-        if (value !== null) {
+        const hasViewed = await hasViewedOnboarding();
+        if (hasViewed) {
           navigation.replace('Register');
         }
       } catch (error) {
-        // Handle error silently
-        }
+        console.error('Error checking onboarding status:', error);
+      }
     };
 
     checkOnboardingStatus();
@@ -212,7 +212,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
     } else {
       // Mark onboarding as completed
       try {
-        await AsyncStorage.setItem('@viewedOnboarding', 'true');
+        await setOnboardingViewed();
         navigation.replace('Register');
       } catch (error) {
         navigation.replace('Register');

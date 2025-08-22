@@ -190,7 +190,7 @@ const SearchScreen = () => {
       useNativeDriver
     >
       <TouchableOpacity
-        activeOpacity={0.9}
+        activeOpacity={0.95}
         onPress={() => navigation.navigate('ProductDetail', {
           productId: item.id,
           sellerId: item.sellerId,
@@ -205,145 +205,173 @@ const SearchScreen = () => {
         })}
         style={styles.productTouchable}
       >
-        <Card 
+        <View 
           style={[
             styles.productCard, 
             { 
               backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.outline,
+              shadowColor: theme.dark ? '#000' : '#000',
             }
-          ]} 
-          mode="outlined"
+          ]}
         >
-          <Card.Cover 
-            source={{ uri: item.image }} 
-            style={styles.productImage} 
-            theme={{ roundness: 12 }}
-          />
-          <Card.Content style={styles.cardContent}>
-            <View style={styles.productHeader}>
-              <Text 
-                variant="titleMedium" 
-                style={[styles.productTitle, { color: theme.colors.onSurface }]} 
-                numberOfLines={2}
-              >
-                {item.name}
+          {/* Product Image with Overlay */}
+          <View style={styles.imageContainer}>
+            <Card.Cover 
+              source={{ uri: item.image }} 
+              style={styles.productImage} 
+            />
+            {/* Rating Badge */}
+            <View style={[styles.ratingBadge, { backgroundColor: 'rgba(0,0,0,0.75)' }]}>
+              <MaterialCommunityIcons 
+                name="star" 
+                size={12} 
+                color="#FFC107" 
+              />
+              <Text style={styles.ratingBadgeText}>
+                {item.rating ? item.rating.toFixed(1) : 'N/A'}
               </Text>
-              <View style={styles.ratingContainer}>
-                <MaterialCommunityIcons 
-                  name="star" 
-                  size={16} 
-                  color={theme.colors.primary} 
-                />
-                <Text 
-                  variant="labelMedium" 
-                  style={[styles.ratingText, { color: theme.colors.onSurfaceVariant }]}
-                >
-                  {item.rating ? item.rating.toFixed(1) : 'N/A'}
-                </Text>
-              </View>
             </View>
+            {/* Heart Icon */}
+            <TouchableOpacity 
+              style={[styles.heartIcon, { backgroundColor: 'rgba(255,255,255,0.9)' }]}
+              onPress={(e) => {
+                e.stopPropagation();
+                // Handle favorite toggle
+              }}
+            >
+              <MaterialCommunityIcons 
+                name="heart-outline" 
+                size={16} 
+                color={theme.colors.primary} 
+              />
+            </TouchableOpacity>
+          </View>
+          
+          {/* Product Content */}
+          <View style={styles.productContent}>
+            <Text 
+              style={[styles.productName, { color: theme.colors.onSurface }]} 
+              numberOfLines={2}
+            >
+              {item.name}
+            </Text>
             
             <Text 
-              variant="bodyMedium" 
               style={[styles.storeName, { color: theme.colors.onSurfaceVariant }]} 
               numberOfLines={1}
             >
               {item.store}
             </Text>
             
-            <View style={styles.priceContainer}>
-              <Text variant="titleLarge" style={[styles.price, { color: theme.colors.primary }]}>
+            <View style={styles.priceRow}>
+              <Text style={[styles.price, { color: theme.colors.primary }]}>
                 ₦{item.price ? item.price.toLocaleString() : 'N/A'}
               </Text>
-              <IconButton
-                icon="heart-outline"
-                size={20}
-                iconColor={theme.colors.onSurfaceVariant}
-                style={styles.heartButton}
-              />
+              {item.reviews && (
+                <Text style={[styles.reviewCount, { color: theme.colors.onSurfaceVariant }]}>
+                  ({item.reviews} reviews)
+                </Text>
+              )}
             </View>
-          </Card.Content>
-        </Card>
+            
+            {item.deliveryTime && (
+              <View style={styles.deliveryInfo}>
+                <MaterialCommunityIcons 
+                  name="truck-delivery-outline" 
+                  size={12} 
+                  color={theme.colors.onSurfaceVariant} 
+                />
+                <Text style={[styles.deliveryText, { color: theme.colors.onSurfaceVariant }]}>
+                  {item.deliveryTime}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
       </TouchableOpacity>
     </Animatable.View>
   );
 
-  const renderStore = ({ item, index }: { item: StoreType; index: number }) => (<Animatable.View 
+  const renderStore = ({ item, index }: { item: StoreType; index: number }) => (
+    <Animatable.View 
       animation="fadeInUp" 
       delay={index * 50}
       duration={400}
       useNativeDriver
     >
       <TouchableOpacity
-        activeOpacity={0.9}
+        activeOpacity={0.95}
         onPress={() => navigation.navigate('SellerProfile', {
           sellerId: item.id,
           sellerName: item.name,
         })}
         style={styles.storeTouchable}
       >
-        <Card 
+        <View 
           style={[
             styles.storeCard, 
             { 
               backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.outline,
+              shadowColor: theme.dark ? '#000' : '#000',
             }
-          ]} 
-          mode="outlined"
+          ]}
         >
-          <Card.Cover 
-            source={{ uri: item.image }} 
-            style={styles.storeImage} 
-            theme={{ roundness: 12 }}
-          />
-          <Card.Content style={styles.cardContent}>
-            <View style={styles.storeHeader}>
-              <Text 
-                variant="titleMedium" 
-                style={[styles.storeTitle, { color: theme.colors.onSurface }]} 
-                numberOfLines={1}
-              >
-                {item.name}
+          {/* Store Image with Overlay */}
+          <View style={styles.imageContainer}>
+            <Card.Cover 
+              source={{ uri: item.image }} 
+              style={styles.storeImage} 
+            />
+            {/* Rating Badge */}
+            <View style={[styles.ratingBadge, { backgroundColor: 'rgba(0,0,0,0.75)' }]}>
+              <MaterialCommunityIcons 
+                name="star" 
+                size={12} 
+                color="#FFC107" 
+              />
+              <Text style={styles.ratingBadgeText}>
+                {item.rating ? item.rating.toFixed(1) : 'N/A'}
               </Text>
-              <View style={styles.ratingContainer}>
-                <MaterialCommunityIcons 
-                  name="star" 
-                  size={16} 
-                  color={theme.colors.primary} 
-                />
-                <Text 
-                  variant="labelMedium" 
-                  style={[styles.ratingText, { color: theme.colors.onSurfaceVariant }]}
-                >
-                  {item.rating ? item.rating.toFixed(1) : 'N/A'}
-                </Text>
-              </View>
             </View>
+            {/* Online Status */}
+            {item.isOnline && (
+              <View style={[styles.onlineStatus, { backgroundColor: '#4CAF50' }]}>
+                <View style={styles.onlineDot} />
+                <Text style={styles.onlineStatusText}>Online</Text>
+              </View>
+            )}
+          </View>
+          
+          {/* Store Content */}
+          <View style={styles.storeContent}>
+            <Text 
+              style={[styles.storeTitle, { color: theme.colors.onSurface }]} 
+              numberOfLines={1}
+            >
+              {item.name}
+            </Text>
             
             <Text 
-              variant="bodyMedium" 
               style={[styles.storeType, { color: theme.colors.onSurfaceVariant }]} 
               numberOfLines={1}
             >
               {item.type}
-              </Text>
-
+            </Text>
+            
             <View style={styles.storeFooter}>
-              <Text variant="bodySmall" style={[styles.distance, { color: theme.colors.onSurfaceVariant }]}>
-                {item.distance}
-              </Text>
-              {item.isOnline && (
-                <View style={[styles.onlineIndicator, { backgroundColor: theme.colors.primary }]}>
-                  <Text style={[styles.onlineText, { color: theme.colors.onPrimary }]}>
-                    Online
-                  </Text>
-                </View>
-              )}
+              <View style={styles.distanceContainer}>
+                <MaterialCommunityIcons 
+                  name="map-marker-outline" 
+                  size={12} 
+                  color={theme.colors.onSurfaceVariant} 
+                />
+                <Text style={[styles.distance, { color: theme.colors.onSurfaceVariant }]}>
+                  {item.distance}
+                </Text>
+              </View>
             </View>
-          </Card.Content>
-        </Card>
+          </View>
+        </View>
       </TouchableOpacity>
     </Animatable.View>
   );
@@ -672,120 +700,169 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   resultsList: {
-    padding: 12,
-    paddingBottom: 20,
+    padding: 16,
+    paddingBottom: 24,
   },
   resultsRow: {
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 20,
+    paddingHorizontal: 4,
   },
   productTouchable: {
     flex: 1,
-    marginHorizontal: 3,
+    marginHorizontal: 4,
+    maxWidth: (width - 48) / 2,
   },
   storeTouchable: {
     flex: 1,
-    marginHorizontal: 3,
+    marginHorizontal: 4,
+    maxWidth: (width - 48) / 2,
   },
   productCard: {
-    borderRadius: 12,
+    borderRadius: 20,
     overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    marginBottom: 4,
   },
   storeCard: {
-    borderRadius: 12,
+    borderRadius: 20,
     overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    marginBottom: 4,
+  },
+  imageContainer: {
+    position: 'relative',
+    height: 160,
   },
   productImage: {
-    height: 120,
+    height: 160,
+    resizeMode: 'cover',
   },
   storeImage: {
-    height: 120,
+    height: 160,
+    resizeMode: 'cover',
   },
-  cardContent: {
-    padding: 10,
-  },
-  productHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 4,
-  },
-  storeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 4,
-  },
-  productName: {
-    fontWeight: '600',
-    flex: 1,
-    marginRight: 6,
-    fontSize: 13,
-    lineHeight: 16,
-  },
-  storeTitle: {
-    fontWeight: '600',
-    flex: 1,
-    marginRight: 6,
-    fontSize: 13,
-    lineHeight: 16,
-  },
-  ratingContainer: {
+  ratingBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 12,
     gap: 2,
   },
-  ratingText: {
-    fontWeight: '600',
+  ratingBadgeText: {
+    color: '#FFF',
     fontSize: 11,
+    fontWeight: '600',
+  },
+  heartIcon: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  onlineStatus: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  onlineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FFF',
+  },
+  onlineStatusText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  productContent: {
+    padding: 16,
+    minHeight: 120,
+  },
+  storeContent: {
+    padding: 16,
+    minHeight: 100,
+  },
+  productName: {
+    fontWeight: '700',
+    fontSize: 15,
+    lineHeight: 20,
+    marginBottom: 6,
+  },
+  storeTitle: {
+    fontWeight: '700',
+    fontSize: 15,
+    lineHeight: 20,
+    marginBottom: 6,
   },
   storeName: {
-    marginBottom: 6,
-    fontSize: 11,
+    fontSize: 13,
+    opacity: 0.7,
+    marginBottom: 10,
+    fontWeight: '500',
   },
   storeType: {
-    marginBottom: 6,
-    fontSize: 11,
+    fontSize: 13,
+    opacity: 0.7,
+    marginBottom: 10,
+    fontWeight: '500',
   },
-  priceContainer: {
+  priceRow: {
     flexDirection: 'row',
+    alignItems: 'baseline',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    marginBottom: 8,
   },
   price: {
-    fontWeight: '700',
-    fontSize: 14,
+    fontWeight: '800',
+    fontSize: 17,
   },
-  heartButton: {
-    margin: 0,
-    marginLeft: 2,
+  reviewCount: {
+    fontSize: 11,
+    opacity: 0.6,
+  },
+  deliveryInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  deliveryText: {
+    fontSize: 11,
+    fontWeight: '500',
   },
   storeFooter: {
+    marginTop: 8,
+  },
+  distanceContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 4,
   },
   distance: {
-    fontSize: 11,
-  },
-  onlineIndicator: {
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 6,
-  },
-  onlineText: {
-    fontSize: 9,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
   },
   emptyState: {
     flex: 1,

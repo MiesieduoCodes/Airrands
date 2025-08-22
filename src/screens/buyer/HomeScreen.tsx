@@ -964,6 +964,35 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
+          {/* Debug Section - Remove after testing */}
+          <View style={{ padding: 16, backgroundColor: theme.colors.errorContainer, marginBottom: 16, borderRadius: 8 }}>
+            <Text style={{ color: theme.colors.onErrorContainer, marginBottom: 8 }}>
+              Debug: Stores: {stores.length}, Runners: {runners.length}
+            </Text>
+            <Button 
+              mode="contained" 
+              onPress={async () => {
+                console.log('Manual data refresh triggered');
+                const result = await addSampleData();
+                console.log('Sample data result:', result);
+                Alert.alert('Debug', `Added sample data. Check console for details.`);
+              }}
+              style={{ marginBottom: 8 }}
+            >
+              Add Sample Data
+            </Button>
+            <Button 
+              mode="outlined" 
+              onPress={() => {
+                console.log('Current stores:', stores);
+                console.log('Current runners:', runners);
+                Alert.alert('Debug', `Stores: ${stores.length}, Runners: ${runners.length}. Check console for details.`);
+              }}
+            >
+              Log Current Data
+            </Button>
+          </View>
+
           {/* Categories */}
           <ScrollView 
             horizontal 
