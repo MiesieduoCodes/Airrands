@@ -506,15 +506,14 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
   // Force map to render after timeout if stuck in loading
   useEffect(() => {
     const mapTimeout = setTimeout(() => {
-      if (!mapReady) {
+      if (!mapReady && !mapError) {
         console.log('Map loading timeout, forcing render');
         setMapReady(true);
-        setForceMapRender(prev => prev + 1);
       }
-    }, 5000); // 5 second timeout
+    }, 3000); // 3 second timeout
 
     return () => clearTimeout(mapTimeout);
-  }, [mapReady, forceMapRender]);
+  }, [mapReady, mapError]);
 
   // Handlers
   const toggleMapSize = () => {
@@ -930,10 +929,6 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
               onMapReady={() => {
                 console.log('Map is ready');
                 setMapReady(true);
-              }}
-              onError={(error) => {
-                console.error('Map error:', error);
-                setMapError('Map failed to initialize');
               }}
               loadingEnabled={false}
               provider={PROVIDER_DEFAULT}

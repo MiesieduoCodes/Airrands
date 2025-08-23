@@ -22,6 +22,10 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.airrands.app",
+      "versionCode": 1,
+      "compileSdkVersion": 34,
+      "targetSdkVersion": 34,
+      "minSdkVersion": 21,
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_FINE_LOCATION",
@@ -34,7 +38,8 @@
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.RECORD_AUDIO"
-      ]
+      ],
+      "proguardFiles": ["proguard-android-optimize.txt", "proguard-rules.pro"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
