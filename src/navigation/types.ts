@@ -61,6 +61,9 @@ export type SharedStackParamList = {
     jobId?: string;
     orderId?: string;
     orderNumber: string;
+    quantity?: number;
+    productName?: string;
+    totalAmount?: number;
   };
   Checkout: { 
     productId: string; 
@@ -124,6 +127,9 @@ export type RootStackParamList = {
     jobId?: string;
     orderId?: string;
     orderNumber: string;
+    quantity?: number;
+    productName?: string;
+    totalAmount?: number;
   };
   RunnerTrackingScreen: { 
     jobId?: string; 

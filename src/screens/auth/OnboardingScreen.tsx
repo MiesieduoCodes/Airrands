@@ -15,7 +15,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useTheme } from '../../contexts/ThemeContext';
 import { COLORS } from '../../constants/colors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -224,7 +223,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
   const handleSkip = async () => {
     // Mark onboarding as completed when skipped
     try {
-      await AsyncStorage.setItem('@viewedOnboarding', 'true');
+      await setOnboardingViewed();
       navigation.replace('Register');
     } catch (error) {
       navigation.replace('Register');

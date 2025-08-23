@@ -350,8 +350,17 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ navigation, r
             variant="titleLarge" 
             style={[styles.price, { color: theme.colors.primary }]}
           >
-            ₦{(currentData.price * quantity).toLocaleString()}
+            ₦{currentData.price.toLocaleString()}
           </Text>
+          
+          {quantity > 1 && (
+            <Text 
+              variant="bodyMedium" 
+              style={[styles.unitPriceNote, { color: theme.colors.onSurfaceVariant }]}
+            >
+              ₦{currentData.price.toLocaleString()} each
+            </Text>
+          )}
 
           <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
 
@@ -670,6 +679,11 @@ const styles = StyleSheet.create({
   },
   writeReviewButton: {
     marginLeft: 16,
+    borderRadius: 8,
+  },
+  unitPriceNote: {
+    fontSize: 12,
+    marginTop: 4,
   },
 });
 

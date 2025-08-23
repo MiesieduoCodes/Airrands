@@ -21,6 +21,9 @@ interface OrderTrackingScreenProps {
       type?: 'order' | 'errand'; // for backward compatibility
       id?: string; // for backward compatibility
       role?: 'buyer' | 'seller' | 'runner';
+      quantity?: number;
+      productName?: string;
+      totalAmount?: number;
     };
   };
   navigation: any;

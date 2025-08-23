@@ -72,19 +72,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initializeAuth = async () => {
       // Set Firebase persistence based on stored preference
-      const rememberMe = await getRememberMe();
-      
       try {
-        if (rememberMe) {
-          // Enable persistence for "Remember Me" users
-          await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-        } else {
-          // Session-only persistence for users who don't want to be remembered
-          await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+        const rememberMe = await getRememberMe();
+        
+        try {
+          if (rememberMe) {
+            // Enable persistence for "Remember Me" users
+            await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+          } else {
+            // Session-only persistence for users who don't want to be remembered
+            await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+          }
+        } catch (error) {
+          console.error('Error setting auth persistence:', error);
+          // Continue with default persistence
         }
-      } catch (error) {
-        console.error('Error setting auth persistence:', error);
-        // Continue with default persistence
+      } catch (storageError) {
+        console.warn('Failed to get remember me preference:', storageError);
+        // Use default persistence
       }
     };
 
@@ -120,16 +125,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       // Set persistence before login
-      await setRememberMe(rememberMe);
+      try {
+        await setRememberMe(rememberMe);
+      } catch (storageError) {
+        console.warn('Failed to save remember me preference:', storageError);
+        // Continue with login even if storage fails
+      }
       
       if (rememberMe) {
         await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         // Save email for future logins
-        await saveUserEmail(email);
+        try {
+          await saveUserEmail(email);
+        } catch (storageError) {
+          console.warn('Failed to save user email:', storageError);
+          // Continue with login even if storage fails
+        }
       } else {
         await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
         // Clear stored email if user doesn't want to be remembered
-        await clearUserCredentials();
+        try {
+          await clearUserCredentials();
+        } catch (storageError) {
+          console.warn('Failed to clear user credentials:', storageError);
+          // Continue with login even if storage fails
+        }
       }
       
       const cred = await auth.signInWithEmailAndPassword(email, password);
@@ -221,7 +241,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       // Clear stored credentials on logout
-      await clearUserCredentials();
+      try {
+        await clearUserCredentials();
+      } catch (storageError) {
+        console.warn('Failed to clear user credentials during logout:', storageError);
+        // Continue with logout even if storage fails
+      }
       await auth.signOut();
     } catch (error) {
       console.error('Logout error:', error);

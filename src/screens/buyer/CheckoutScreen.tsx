@@ -31,7 +31,7 @@ import { validateField, ValidationRule } from '../../utils/validation';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 // @ts-ignore
-const PaystackWebView = require('react-native-paystack-webview').default;
+const PaystackWebView = require('react-native-paystack-webview');
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import * as Location from 'expo-location';
 import ErrorBoundary from '../../components/ErrorBoundary';
@@ -80,6 +80,7 @@ interface CheckoutScreenProps {
       sellerId: string;
       productName: string;
       price: number;
+      quantity?: number;
     };
   };
 }
@@ -111,7 +112,7 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
 
   
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('1');
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(route.params.quantity || 1);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPaystack, setShowPaystack] = useState(false);
@@ -306,6 +307,9 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
       jobType: 'order',
       jobId: orderId,
       orderNumber: generateOrderNumber(orderId),
+      quantity: quantity,
+      productName: productName,
+      totalAmount: price * quantity,
     });
   };
 
@@ -617,6 +621,9 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
                 <Text variant="bodyMedium" style={[styles.sellerName, { color: theme.colors.onSurfaceVariant }]}>
                   {loadingSeller ? 'Loading seller...' : (sellerInfo?.name || 'Unknown Store')}
                 </Text>
+                <Text variant="bodyMedium" style={[styles.unitPrice, { color: theme.colors.onSurfaceVariant }]}>
+                  ₦{price.toLocaleString()} each
+                </Text>
               </View>
             
             <View style={styles.quantityContainer}>
@@ -838,7 +845,38 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
           
           <Text variant="bodyLarge" style={[styles.successMessage, { color: theme.colors.onSurfaceVariant }]}>
             Your order has been placed successfully. Would you like to arrange delivery?
+          </Text>
+
+          {/* Order Summary */}
+          <View style={[styles.orderSummaryCard, { backgroundColor: theme.colors.surface }]}>
+            <Text variant="titleMedium" style={[styles.orderSummaryTitle, { color: theme.colors.onSurface }]}>
+              Order Summary
+            </Text>
+            <View style={styles.orderSummaryRow}>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                {productName}
               </Text>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
+                Qty: {quantity}
+              </Text>
+            </View>
+            <View style={styles.orderSummaryRow}>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                Unit Price:
+              </Text>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
+                ₦{price.toLocaleString()}
+              </Text>
+            </View>
+            <View style={[styles.orderSummaryRow, styles.totalRow]}>
+              <Text variant="titleMedium" style={[styles.totalLabel, { color: theme.colors.onSurface }]}>
+                Total:
+              </Text>
+              <Text variant="titleMedium" style={[styles.totalValue, { color: theme.colors.primary }]}>
+                ₦{(price * quantity).toLocaleString()}
+              </Text>
+            </View>
+          </View>
 
           {/* Runner Selection Toggle */}
           <View style={[styles.runnerToggleSection, { backgroundColor: theme.colors.surface }]}>
@@ -1027,7 +1065,7 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 45,
+    paddingTop: 35,
   },
   header: {
     flexDirection: 'row',
@@ -1078,6 +1116,10 @@ const styles = StyleSheet.create({
   },
   sellerName: {
     fontSize: 14,
+  },
+  unitPrice: {
+    fontSize: 14,
+    marginTop: 2,
   },
   quantityContainer: {
     flexDirection: 'row',
@@ -1360,6 +1402,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  orderSummaryCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginVertical: 16,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  orderSummaryTitle: {
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  orderSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  totalRow: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
   },
 });
 

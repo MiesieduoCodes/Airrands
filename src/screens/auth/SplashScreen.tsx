@@ -4,7 +4,7 @@ import { Text, ActivityIndicator } from 'react-native-paper';
 import { COLORS } from '../../constants/colors';
 import { AuthNavigationProp } from '../../navigation/types';
 import { useTheme } from '../../contexts/ThemeContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { hasViewedOnboarding } from '../../utils/storage';
 import { useAuth } from '../../contexts/AuthContext';
 import { auth, db } from '../../config/firebase';
 import * as Animatable from 'react-native-animatable';
@@ -51,7 +51,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ navigation }) => {
         return;
       }
 
-      const viewed = await AsyncStorage.getItem('@viewedOnboarding');
+      const viewed = await hasViewedOnboarding();
     
       if (!viewed) {
         navigation.replace('Onboarding');
@@ -67,7 +67,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ navigation }) => {
     } catch (error: any) {
       
       // Fallback navigation
-      const viewed = await AsyncStorage.getItem('@viewedOnboarding');
+      const viewed = await hasViewedOnboarding();
       if (!viewed) {
         navigation.replace('Onboarding');
       } else {

@@ -38,7 +38,7 @@ import { DocumentReference } from 'firebase/firestore';
 import { haversineDistance, formatDistance, calculateAndFormatDistance, isValidCoordinate } from '../../utils/distance';
 import { addSampleData, checkDataExists } from '../../utils/sampleData';
 // @ts-ignore
-const PaystackWebView = require('react-native-paystack-webview').default;
+const PaystackWebView = require('react-native-paystack-webview');
 import * as Location from 'expo-location';
 
 const { width, height } = Dimensions.get('window');
@@ -115,6 +115,8 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
   const [mapReady, setMapReady] = useState(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
+  const [forceMapRender, setForceMapRender] = useState(0);
   const [products, setProducts] = useState<any[]>([]); // State for products
   const [error, setError] = useState<string | null>(null); // State for error messages
   const [reviewPromptVisible, setReviewPromptVisible] = useState(false);
@@ -501,6 +503,19 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
     getLocation();
   }, []);
 
+  // Force map to render after timeout if stuck in loading
+  useEffect(() => {
+    const mapTimeout = setTimeout(() => {
+      if (!mapReady) {
+        console.log('Map loading timeout, forcing render');
+        setMapReady(true);
+        setForceMapRender(prev => prev + 1);
+      }
+    }, 5000); // 5 second timeout
+
+    return () => clearTimeout(mapTimeout);
+  }, [mapReady, forceMapRender]);
+
   // Handlers
   const toggleMapSize = () => {
     const newHeight = isMapExpanded ? height * 0.4 : height * 0.6;
@@ -864,81 +879,137 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
 
       {/* Map Section */}
       <Animated.View style={[styles.mapContainer, { height: mapHeight }]}>
-        {getDefaultRegion() ? (
-          <MapView
-            style={styles.map}
-            initialRegion={getDefaultRegion()!}
-            onMapReady={() => setMapReady(true)}
-            loadingEnabled={!mapReady}
-            provider={PROVIDER_DEFAULT}
-            showsUserLocation={true}
-            showsMyLocationButton={true}
-            showsCompass={true}
-            showsScale={true}
-            showsTraffic={false}
-            showsBuildings={true}
-            showsIndoors={true}
-            mapType="standard"
-          >
-            
-            
-            {/* Store Markers */}
-            {filteredStores.map((store) => (<Marker
-                key={`store-${store.id}`}
-                coordinate={{
-                  latitude: store.latitude, longitude: store.longitude}}
-                onPress={() => handleStorePress(store)}
-              >
-                <View style={styles.markerContainer}>
-                  <MaterialCommunityIcons 
-                    name={
-                      store.type === 'restaurant' ? 'food' : 
-                      store.type === 'grocery' ? 'basket' : 'store'
-                    }
-                    size={24}
-                    color={theme.colors.onPrimary}
-                    style={[styles.markerIcon, { backgroundColor: theme.colors.primary }]}
-                  />
-                  <View style={[styles.markerBadge, { backgroundColor: theme.colors.primary }]}>
-                    <Text style={styles.markerText}>⭐ {formatRating(store.rating)}</Text>
-                  </View>
-                </View>
-              </Marker>
-            ))}
-            
-            {/* Runner Markers */}
-            {filteredRunners.map((runner) => (<Marker
-                key={`runner-${runner.id}`}
-                coordinate={{
-                  latitude: runner.latitude, longitude: runner.longitude}}
-                onPress={() => handleRunnerPress(runner)}
-              >
-                <View style={styles.runnerMarker}>
-                  <Avatar.Image 
-                    source={{ uri: runner.image }} 
-                    size={40}
-                    style={[
-                      styles.runnerAvatar,
-                      { 
-                        borderColor: runner.status === 'available' 
-                          ? theme.colors.secondary 
-                          : theme.colors.outline 
-                      }
-                    ]}
-                  />
-                  {runner.status === 'available' && (
-                    <View style={[styles.runnerBadge, { backgroundColor: theme.colors.secondary }]} />
-                  )}
-                </View>
-              </Marker>
-            ))}
-          </MapView>
-        ) : (
-          <View style={[styles.map, { justifyContent: 'center', alignItems: 'center' }]}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={[styles.loadingText, { color: theme.colors.onSurfaceVariant, marginTop: 16 }]}>
-              Loading map...
+        {!mapReady && !mapError ? (
+          <View style={[styles.map, styles.errorContainer]}>
+            <MaterialCommunityIcons name="map" size={48} color={theme.colors.primary} />
+            <Text style={[styles.errorText, { color: theme.colors.onSurface }]}>
+              Loading Map...
             </Text>
+            <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 16 }} />
+            <Button mode="outlined" onPress={() => {
+              setMapReady(true);
+              setForceMapRender(prev => prev + 1);
+            }} style={{ marginTop: 16 }}>
+              Skip Loading
+            </Button>
+          </View>
+        ) : mapError ? (
+          <View style={[styles.map, styles.errorContainer]}>
+            <MaterialCommunityIcons name="map-marker-off" size={48} color={theme.colors.error} />
+            <Text style={[styles.errorText, { color: theme.colors.error }]}>
+              Map failed to load
+            </Text>
+            <Text style={[styles.errorSubtext, { color: theme.colors.onSurfaceVariant }]}>
+              {mapError}
+            </Text>
+            <Button mode="outlined" onPress={() => {
+              setMapError(null);
+              setMapReady(false);
+              setForceMapRender(prev => prev + 1);
+            }} style={{ marginTop: 16 }}>
+              Retry
+            </Button>
+            <Button mode="text" onPress={() => {
+              setMapError(null);
+              setMapReady(true);
+            }} style={{ marginTop: 8 }}>
+              Continue Without Map
+            </Button>
+          </View>
+        ) : (
+          <View style={styles.map}>
+            <MapView
+              key={`map-${forceMapRender}`}
+              style={StyleSheet.absoluteFillObject}
+              initialRegion={{
+                latitude: 6.5244,
+                longitude: 3.3792,
+                latitudeDelta: 0.05,
+                longitudeDelta: 0.05,
+              }}
+              onMapReady={() => {
+                console.log('Map is ready');
+                setMapReady(true);
+              }}
+              onError={(error) => {
+                console.error('Map error:', error);
+                setMapError('Map failed to initialize');
+              }}
+              loadingEnabled={false}
+              provider={PROVIDER_DEFAULT}
+              mapType="standard"
+              scrollEnabled={true}
+              zoomEnabled={true}
+              showsUserLocation={false}
+              showsMyLocationButton={false}
+              showsCompass={false}
+              showsScale={false}
+              showsTraffic={false}
+              showsBuildings={false}
+              showsIndoors={false}
+              rotateEnabled={false}
+              pitchEnabled={false}
+              toolbarEnabled={false}
+              moveOnMarkerPress={false}
+              showsPointsOfInterest={false}
+            >
+              {/* Store Markers */}
+              {mapReady && filteredStores.map((store) => (
+                <Marker
+                  key={`store-${store.id}`}
+                  coordinate={{
+                    latitude: store.latitude, 
+                    longitude: store.longitude
+                  }}
+                  onPress={() => handleStorePress(store)}
+                >
+                  <View style={styles.markerContainer}>
+                    <MaterialCommunityIcons 
+                      name={
+                        store.type === 'restaurant' ? 'food' : 
+                        store.type === 'grocery' ? 'basket' : 'store'
+                      }
+                      size={24}
+                      color={theme.colors.onPrimary}
+                      style={[styles.markerIcon, { backgroundColor: theme.colors.primary }]}
+                    />
+                    <View style={[styles.markerBadge, { backgroundColor: theme.colors.primary }]}>
+                      <Text style={styles.markerText}>⭐ {formatRating(store.rating)}</Text>
+                    </View>
+                  </View>
+                </Marker>
+              ))}
+              
+              {/* Runner Markers */}
+              {mapReady && filteredRunners.map((runner) => (
+                <Marker
+                  key={`runner-${runner.id}`}
+                  coordinate={{
+                    latitude: runner.latitude, 
+                    longitude: runner.longitude
+                  }}
+                  onPress={() => handleRunnerPress(runner)}
+                >
+                  <View style={styles.runnerMarker}>
+                    <Avatar.Image 
+                      source={{ uri: runner.image }} 
+                      size={40}
+                      style={[
+                        styles.runnerAvatar,
+                        { 
+                          borderColor: runner.status === 'available' 
+                            ? theme.colors.secondary 
+                            : theme.colors.outline 
+                        }
+                      ]}
+                    />
+                    {runner.status === 'available' && (
+                      <View style={[styles.runnerBadge, { backgroundColor: theme.colors.secondary }]} />
+                    )}
+                  </View>
+                </Marker>
+              ))}
+            </MapView>
           </View>
         )}
         <TouchableOpacity 
@@ -1525,6 +1596,22 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 2,
     borderColor: 'white',
+  },
+  errorContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  errorSubtext: {
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
 
