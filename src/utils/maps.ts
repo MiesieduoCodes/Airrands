@@ -70,20 +70,17 @@ export function getRegionForCoordinates(points: Location[]) {
   };
 }
 
-export function calculateETA(distance: number, averageSpeed: number = 30): string {
-  // averageSpeed in km/h
-  const timeInHours = distance / averageSpeed;
-  const timeInMinutes = Math.round(timeInHours * 60);
-  
-  if (timeInMinutes < 1) {
-    return 'Less than a minute';
-  } else if (timeInMinutes === 1) {
-    return '1 minute';
-  } else if (timeInMinutes < 60) {
-    return `${timeInMinutes} minutes`;
+// maps.ts
+export const calculateETA = (distanceKm: number): string => {
+  const averageSpeedKmh = 15; // Average delivery speed in km/h
+  const timeHours = distanceKm / averageSpeedKmh;
+  const timeMinutes = Math.round(timeHours * 60);
+
+  if (timeMinutes < 60) {
+    return `${timeMinutes} minutes`;
   } else {
-    const hours = Math.floor(timeInMinutes / 60);
-    const minutes = timeInMinutes % 60;
+    const hours = Math.floor(timeMinutes / 60);
+    const minutes = timeMinutes % 60;
     return `${hours}h ${minutes}m`;
   }
-}
+};

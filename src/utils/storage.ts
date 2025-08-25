@@ -1,8 +1,6 @@
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-// --- Storage keys ---
 const STORAGE_KEYS = {
   REMEMBER_ME: '@airrands_remember_me',
   USER_CREDENTIALS: '@airrands_user_credentials',
@@ -10,131 +8,57 @@ const STORAGE_KEYS = {
   USER_PREFERENCES: '@airrands_user_preferences',
 } as const;
 
-// --- Safe wrapper ---
+// Check if we are on web and localStorage exists
+const hasWebStorage = (): boolean =>
+  Platform.OS === 'web' && typeof window !== 'undefined' && !!window.localStorage;
+
 const safeStorage = {
   async setItem(key: string, value: string): Promise<void> {
     try {
-      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      if (hasWebStorage()) {
         window.localStorage.setItem(key, value);
       } else {
-        // Ensure AsyncStorage is available before using it
-        if (!AsyncStorage) {
-          throw new Error('AsyncStorage is not available');
-        }
         await AsyncStorage.setItem(key, value);
       }
     } catch (error) {
-      console.error(`Failed to setItem for key "${key}":`, error);
-      throw error; // Re-throw to handle upstream
+      console.error(`Storage setItem error for "${key}":`, error);
     }
   },
 
   async getItem(key: string): Promise<string | null> {
     try {
-      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      if (hasWebStorage()) {
         return window.localStorage.getItem(key);
       } else {
-        // Ensure AsyncStorage is available before using it
-        if (!AsyncStorage) {
-          console.warn('AsyncStorage is not available');
-          return null;
-        }
         return await AsyncStorage.getItem(key);
       }
     } catch (error) {
-      console.error(`Failed to getItem for key "${key}":`, error);
+      console.error(`Storage getItem error for "${key}":`, error);
       return null;
     }
   },
 
   async removeItem(key: string): Promise<void> {
     try {
-      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      if (hasWebStorage()) {
         window.localStorage.removeItem(key);
       } else {
-        // Ensure AsyncStorage is available before using it
-        if (!AsyncStorage) {
-          throw new Error('AsyncStorage is not available');
-        }
         await AsyncStorage.removeItem(key);
       }
     } catch (error) {
-      console.error(`Failed to removeItem for key "${key}":`, error);
-      throw error; // Re-throw to handle upstream
+      console.error(`Storage removeItem error for "${key}":`, error);
     }
   },
 
   async clear(): Promise<void> {
     try {
-      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      if (hasWebStorage()) {
         window.localStorage.clear();
       } else {
-        // Ensure AsyncStorage is available before using it
-        if (!AsyncStorage) {
-          throw new Error('AsyncStorage is not available');
-        }
         await AsyncStorage.clear();
       }
     } catch (error) {
-      console.error('Failed to clear storage:', error);
-      throw error; // Re-throw to handle upstream
-    }
-  },
-  
-  async multiSet(keyValuePairs: Array<[string, string]>): Promise<void> {
-    try {
-      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-        keyValuePairs.forEach(([key, value]) => {
-          window.localStorage.setItem(key, value);
-        });
-      } else {
-        // Ensure AsyncStorage is available before using it
-        if (!AsyncStorage) {
-          throw new Error('AsyncStorage is not available');
-        }
-        await AsyncStorage.multiSet(keyValuePairs);
-      }
-    } catch (error) {
-      console.error('Failed to multiSet:', error);
-      throw error; // Re-throw to handle upstream
-    }
-  },
-
-  async multiGet(keys: string[]): Promise<(string | null)[]> {
-    try {
-      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-        return keys.map(key => window.localStorage.getItem(key));
-      } else {
-        // Ensure AsyncStorage is available before using it
-        if (!AsyncStorage) {
-          console.warn('AsyncStorage is not available');
-          return keys.map(() => null);
-        }
-        const results = await AsyncStorage.multiGet(keys);
-        return results.map(([key, value]) => value);
-      }
-    } catch (error) {
-      console.error('Failed to multiGet:', error);
-      return keys.map(() => null);
-    }
-  },
-
-  async multiRemove(keys: string[]): Promise<void> {
-    try {
-      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-        keys.forEach(key => {
-          window.localStorage.removeItem(key);
-        });
-      } else {
-        // Ensure AsyncStorage is available before using it
-        if (!AsyncStorage) {
-          throw new Error('AsyncStorage is not available');
-        }
-        await AsyncStorage.multiRemove(keys);
-      }
-    } catch (error) {
-      console.error('Failed to multiRemove:', error);
-      throw error; // Re-throw to handle upstream
+      console.error('Storage clear error:', error);
     }
   },
 };
@@ -204,24 +128,3 @@ export const getUserPreferences = async (): Promise<UserPreferences> => {
 
 // --- Clear all app data ---
 export const clearAllAppData = async () => safeStorage.clear();
-
-// --- Debug / Test ---
-export const testStorage = async () => {
-  console.log('--- Testing storage ---', Platform.OS);
-
-  await safeStorage.setItem('test_key', 'test_value');
-  console.log('✓ setItem works');
-
-  const value = await safeStorage.getItem('test_key');
-  console.log('✓ getItem works:', value);
-
-  await safeStorage.removeItem('test_key');
-  console.log('✓ removeItem works');
-
-  const removedValue = await safeStorage.getItem('test_key');
-  console.log('✓ Verification works, removed value:', removedValue);
-
-  await safeStorage.clear();
-  console.log('✓ clear works');
-  console.log('--- Storage test completed ---');
-};

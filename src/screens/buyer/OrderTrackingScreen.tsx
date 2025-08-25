@@ -10,6 +10,7 @@ import { updateOrderStatus } from '../../services/buyerServices';
 import io from 'socket.io-client';
 import * as Location from 'expo-location';
 import { PRODUCTION_CONFIG } from '../../config/production';
+import { getDirections, getRegionForCoordinates, calculateETA } from '../../utils/maps';
 
 interface OrderTrackingScreenProps {
   route: {
@@ -29,7 +30,6 @@ interface OrderTrackingScreenProps {
   navigation: any;
 }
 
-import { getDirections, getRegionForCoordinates, calculateETA } from '../../utils/maps';
 
 const statusLabels: Record<string, string> = {
   available: 'Available',
@@ -42,8 +42,8 @@ const statusLabels: Record<string, string> = {
   ontheway: 'On The Way',
   delivered: 'Delivered',
   assigned: 'Assigned to Runner',
-  pickedup: 'Picked Up',
-  outfordelivery: 'Out for Delivery',
+  picked_up: 'Picked Up',
+  out_for_delivery: 'Out for Delivery',
 };
 
 const statusColors: Record<string, string> = {
@@ -57,8 +57,8 @@ const statusColors: Record<string, string> = {
   ontheway: '#2196F3',
   delivered: '#4CAF50',
   assigned: '#9C27B0',
-  pickedup: '#FF5722',
-  outfordelivery: '#3F51B5',
+  picked_up: '#FF5722',
+  out_for_delivery: '#3F51B5',
 };
 
 const statusSteps = [
@@ -174,6 +174,29 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
     }
   };
 
+  const normalizeDate = (value: any): Date | undefined => {
+  if (!value) return undefined;
+
+  // Firestore Timestamp object
+  if (value.toDate && typeof value.toDate === "function") {
+    return value.toDate();
+  }
+
+  // ISO string or numeric timestamp
+  if (typeof value === "string" || typeof value === "number") {
+    const date = new Date(value);
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+  }
+
+  // Already a Date object
+  if (value instanceof Date) {
+    return value;
+  }
+
+  return undefined;
+};
   // Calculate distance between two points
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371; // Earth's radius in kilometers
@@ -187,20 +210,6 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
     return R * c; // Distance in kilometers
   };
 
-  // Calculate ETA based on distance and average speed
-  const calculateETA = (distanceKm: number): string => {
-    const averageSpeedKmh = 15; // Average delivery speed in km/h
-    const timeHours = distanceKm / averageSpeedKmh;
-    const timeMinutes = Math.round(timeHours * 60);
-    
-    if (timeMinutes < 60) {
-      return `${timeMinutes} minutes`;
-    } else {
-      const hours = Math.floor(timeMinutes / 60);
-      const minutes = timeMinutes % 60;
-      return `${hours}h ${minutes}m`;
-    }
-  };
 
   // Get user's current location and update map
   const getUserLocation = async () => {

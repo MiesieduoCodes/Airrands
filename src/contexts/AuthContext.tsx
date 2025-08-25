@@ -10,6 +10,7 @@ import {
   clearUserCredentials,
 } from '../utils/storage';
 
+// --- User type ---
 interface User {
   uid: string;
   email: string | null;
@@ -18,6 +19,7 @@ interface User {
   emailVerified: boolean;
 }
 
+// --- Context type ---
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
@@ -38,6 +40,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// --- Ensure user profile exists in Firestore ---
 const ensureUserProfile = async (firebaseUser: firebase.User): Promise<string> => {
   try {
     const userRef = db.collection('users').doc(firebaseUser.uid);
@@ -55,7 +58,6 @@ const ensureUserProfile = async (firebaseUser: firebase.User): Promise<string> =
         phoneNumber: firebaseUser.phoneNumber || '',
         lastLoginAt: firebase.firestore.FieldValue.serverTimestamp(),
       };
-
       await userRef.set(userData);
       return 'buyer';
     } else {
@@ -68,30 +70,23 @@ const ensureUserProfile = async (firebaseUser: firebase.User): Promise<string> =
   }
 };
 
+// --- Provider ---
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // --- Initialize auth state ---
   useEffect(() => {
     const initializeAuth = async () => {
       try {
         const rememberMe = await getRememberMe();
-        try {
-          await auth.setPersistence(
-            rememberMe ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION
-          );
-        } catch (err) {
-          console.error('Firebase persistence initialization error:', err);
-        }
-      } catch (storageErr) {
-        console.error('Storage error - Failed to get remember me preference:', storageErr);
-        // Use default persistence if storage fails
-        try {
-          await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-        } catch (defaultErr) {
-          console.error('Failed to set default persistence:', defaultErr);
-        }
+        await auth.setPersistence(
+          rememberMe ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION
+        );
+      } catch (err) {
+        console.error('Failed to initialize persistence:', err);
+        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
       }
     };
 
@@ -120,41 +115,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return unsubscribe;
   }, []);
 
+  // --- Login ---
   const login = async (email: string, password: string, rememberMe: boolean = true) => {
     setLoading(true);
     try {
-      // Handle storage operations with better error handling
-      try {
-        await setRememberMe(rememberMe);
-      } catch (storageErr) {
-        console.error('Storage error - Failed to save remember me preference:', storageErr);
-        // Continue with login even if storage fails
-      }
+      await setRememberMe(rememberMe);
+      rememberMe ? await saveUserEmail(email) : await clearUserCredentials();
 
-      try {
-        await auth.setPersistence(
-          rememberMe ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION
-        );
-      } catch (persistenceErr) {
-        console.error('Firebase persistence error:', persistenceErr);
-        // Continue with login even if persistence setting fails
-      }
-
-      if (rememberMe) {
-        try {
-          await saveUserEmail(email);
-        } catch (storageErr) {
-          console.error('Storage error - Failed to save user email:', storageErr);
-          // Continue with login even if email saving fails
-        }
-      } else {
-        try {
-          await clearUserCredentials();
-        } catch (storageErr) {
-          console.error('Storage error - Failed to clear user credentials:', storageErr);
-          // Continue with login even if clearing fails
-        }
-      }
+      await auth.setPersistence(
+        rememberMe ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION
+      );
 
       const cred = await auth.signInWithEmailAndPassword(email, password);
       if (cred.user) {
@@ -180,6 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // --- Register ---
   const register = async (email: string, password: string, role: 'buyer' | 'seller' | 'runner') => {
     try {
       const cred = await auth.createUserWithEmailAndPassword(email, password);
@@ -225,24 +196,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // --- Logout ---
   const logout = async () => {
     try {
-      try {
-        await clearUserCredentials();
-      } catch (storageErr) {
-        console.error('Storage error - Failed to clear credentials on logout:', storageErr);
-        // Continue with logout even if storage clearing fails
-      }
+      await clearUserCredentials();
       await auth.signOut();
+      setUser(null);
+      setRole(null);
     } catch (error) {
       console.error('Logout error:', error);
       throw error;
     }
   };
 
+  // --- Email Verification ---
   const sendVerificationEmail = async () => {
     if (!auth.currentUser || auth.currentUser.emailVerified) return;
-
     try {
       const actionCodeSettings = { url: 'https://airrands.com/verify-email', handleCodeInApp: false };
       await auth.currentUser.sendEmailVerification(actionCodeSettings);
@@ -251,17 +220,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const resendVerificationEmail = async () => {
-    if (!auth.currentUser || auth.currentUser.emailVerified) return;
+  const resendVerificationEmail = async () => sendVerificationEmail();
 
-    try {
-      const actionCodeSettings = { url: 'https://airrands.com/verify-email', handleCodeInApp: false };
-      await auth.currentUser.sendEmailVerification(actionCodeSettings);
-    } catch {
-      await auth.currentUser?.sendEmailVerification();
-    }
-  };
-
+  // --- Delete Account ---
   const deleteUserAccount = async () => {
     try {
       const currentUser = auth.currentUser;
@@ -270,15 +231,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const uid = currentUser.uid;
       const batch = db.batch();
 
-      const userRef = db.collection('users').doc(uid);
-      batch.delete(userRef);
+      batch.delete(db.collection('users').doc(uid));
       batch.delete(db.collection('buyers').doc(uid));
       batch.delete(db.collection('sellers').doc(uid));
       batch.delete(db.collection('runners').doc(uid));
 
       const notificationsRef = db.collection('users').doc(uid).collection('notifications');
       const snapshot = await notificationsRef.get();
-      snapshot.docs.forEach(doc => batch.delete(doc.ref));
+      snapshot.docs.forEach((doc) => batch.delete(doc.ref));
 
       await batch.commit();
       await currentUser.delete();
@@ -288,6 +248,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // --- Helpers ---
   const checkEmailAvailability = async (email: string): Promise<boolean> => {
     try {
       const methods = await auth.fetchSignInMethodsForEmail(email);
@@ -332,9 +293,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const getStoredEmail = async (): Promise<string | null> => await getUserEmail();
-  const getRememberMePreference = async (): Promise<boolean> => await getRememberMe();
+  const getStoredEmail = async (): Promise<string | null> => getUserEmail();
+  const getRememberMePreference = async (): Promise<boolean> => getRememberMe();
 
+  // --- Context Value ---
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
@@ -356,6 +318,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+// --- Hook ---
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
