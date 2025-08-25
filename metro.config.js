@@ -30,7 +30,4 @@ config.transformer.minifierConfig = {
   },
 };
 
-// Optimize bundle splitting
-config.serializer.customSerializer = require('metro-serializer-esbuild');
-
 module.exports = config;

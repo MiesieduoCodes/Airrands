@@ -592,14 +592,13 @@ const SearchScreen = () => {
           </Text>
         </View>
       ) : searchResults.length > 0 ? (<FlatList
-          data={searchResults}
-          renderItem={renderItem}
-          keyExtractor={(item: any) => item.id}
-          contentContainerStyle={styles.resultsList}
-          showsVerticalScrollIndicator={false}
-          numColumns={2}
-          columnWrapperStyle={styles.resultsRow}
-        />
+        data={searchResults}
+        renderItem={renderItem}
+        keyExtractor={(item: any) => item.id}
+        contentContainerStyle={styles.resultsList}
+        showsVerticalScrollIndicator={false}
+        numColumns={1}   // ✅ full-width cards
+      />      
       ) : (
         renderEmptyState()
       )}
@@ -703,20 +702,15 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 24,
   },
-  resultsRow: {
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    paddingHorizontal: 4,
-  },
   productTouchable: {
     flex: 1,
-    marginHorizontal: 4,
-    maxWidth: (width - 48) / 2,
+    marginBottom: 16,
+    width: '100%',   // ✅ full width
   },
   storeTouchable: {
     flex: 1,
-    marginHorizontal: 4,
-    maxWidth: (width - 48) / 2,
+    marginBottom: 16,
+    width: '100%',   // ✅ full width
   },
   productCard: {
     borderRadius: 20,
@@ -738,15 +732,15 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     position: 'relative',
-    height: 160,
+    height: 220,   // ✅ bigger image for larger cards
   },
   productImage: {
-    height: 160,
+    height: 220,
     resizeMode: 'cover',
   },
   storeImage: {
-    height: 160,
-    resizeMode: 'cover',
+    height: 220,
+  resizeMode: 'cover',
   },
   ratingBadge: {
     position: 'absolute',

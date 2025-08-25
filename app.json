@@ -22,7 +22,6 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.airrands.app",
-      "versionCode": 1,
       "compileSdkVersion": 34,
       "targetSdkVersion": 34,
       "minSdkVersion": 21,

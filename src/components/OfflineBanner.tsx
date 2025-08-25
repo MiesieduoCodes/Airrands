@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 1000,
     position: 'absolute',
-    top: 40,
+    top: 30,
     left: 0,
     right: 0,
   },

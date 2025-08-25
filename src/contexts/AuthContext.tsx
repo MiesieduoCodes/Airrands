@@ -2,7 +2,13 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from '../config/firebase';
 import firebase from 'firebase/compat/app';
 import { UserRole } from '../navigation/types';
-import { setRememberMe, getRememberMe, saveUserEmail, getUserEmail, clearUserCredentials } from '../utils/storage';
+import {
+  setRememberMe,
+  getRememberMe,
+  saveUserEmail,
+  getUserEmail,
+  clearUserCredentials,
+} from '../utils/storage';
 
 interface User {
   uid: string;
@@ -36,9 +42,8 @@ const ensureUserProfile = async (firebaseUser: firebase.User): Promise<string> =
   try {
     const userRef = db.collection('users').doc(firebaseUser.uid);
     const userDoc = await userRef.get();
-    
+
     if (!userDoc.exists) {
-      // Create new user profile with default role
       const userData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
@@ -50,13 +55,12 @@ const ensureUserProfile = async (firebaseUser: firebase.User): Promise<string> =
         phoneNumber: firebaseUser.phoneNumber || '',
         lastLoginAt: firebase.firestore.FieldValue.serverTimestamp(),
       };
-      
+
       await userRef.set(userData);
       return 'buyer';
     } else {
       const userData = userDoc.data();
-      const userRole = userData?.role || 'buyer';
-      return userRole;
+      return userData?.role || 'buyer';
     }
   } catch (error) {
     console.error('Error ensuring user profile:', error);
@@ -71,25 +75,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const initializeAuth = async () => {
-      // Set Firebase persistence based on stored preference
       try {
         const rememberMe = await getRememberMe();
-        
         try {
-          if (rememberMe) {
-            // Enable persistence for "Remember Me" users
-            await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-          } else {
-            // Session-only persistence for users who don't want to be remembered
-            await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
-          }
-        } catch (error) {
-          console.error('Error setting auth persistence:', error);
-          // Continue with default persistence
+          await auth.setPersistence(
+            rememberMe ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION
+          );
+        } catch (err) {
+          console.error('Firebase persistence initialization error:', err);
         }
-      } catch (storageError) {
-        console.warn('Failed to get remember me preference:', storageError);
-        // Use default persistence
+      } catch (storageErr) {
+        console.error('Storage error - Failed to get remember me preference:', storageErr);
+        // Use default persistence if storage fails
+        try {
+          await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        } catch (defaultErr) {
+          console.error('Failed to set default persistence:', defaultErr);
+        }
       }
     };
 
@@ -97,7 +99,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
-        // Convert Firebase User to our User interface
         const userData: User = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
@@ -105,10 +106,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           photoURL: firebaseUser.photoURL,
           emailVerified: firebaseUser.emailVerified,
         };
-        
         setUser(userData);
-        
-        // Ensure user profile exists
+
         const userRole = await ensureUserProfile(firebaseUser);
         setRole(userRole as UserRole);
       } else {
@@ -124,42 +123,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string, rememberMe: boolean = true) => {
     setLoading(true);
     try {
-      // Set persistence before login
+      // Handle storage operations with better error handling
       try {
         await setRememberMe(rememberMe);
-      } catch (storageError) {
-        console.warn('Failed to save remember me preference:', storageError);
+      } catch (storageErr) {
+        console.error('Storage error - Failed to save remember me preference:', storageErr);
         // Continue with login even if storage fails
       }
-      
+
+      try {
+        await auth.setPersistence(
+          rememberMe ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION
+        );
+      } catch (persistenceErr) {
+        console.error('Firebase persistence error:', persistenceErr);
+        // Continue with login even if persistence setting fails
+      }
+
       if (rememberMe) {
-        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-        // Save email for future logins
         try {
           await saveUserEmail(email);
-        } catch (storageError) {
-          console.warn('Failed to save user email:', storageError);
-          // Continue with login even if storage fails
+        } catch (storageErr) {
+          console.error('Storage error - Failed to save user email:', storageErr);
+          // Continue with login even if email saving fails
         }
       } else {
-        await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
-        // Clear stored email if user doesn't want to be remembered
         try {
           await clearUserCredentials();
-        } catch (storageError) {
-          console.warn('Failed to clear user credentials:', storageError);
-          // Continue with login even if storage fails
+        } catch (storageErr) {
+          console.error('Storage error - Failed to clear user credentials:', storageErr);
+          // Continue with login even if clearing fails
         }
       }
-      
+
       const cred = await auth.signInWithEmailAndPassword(email, password);
       if (cred.user) {
-        // Login successful
-        
-        // Reload user to get latest verification status
         await cred.user.reload();
-        
-        // Update user state with fresh data
+
         const userData: User = {
           uid: cred.user.uid,
           email: cred.user.email,
@@ -168,11 +168,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           emailVerified: cred.user.emailVerified,
         };
         setUser(userData);
-        
-        // Ensure user profile exists and get role
+
         const userRole = await ensureUserProfile(cred.user);
         setRole(userRole as UserRole);
-        
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -185,12 +183,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (email: string, password: string, role: 'buyer' | 'seller' | 'runner') => {
     try {
       const cred = await auth.createUserWithEmailAndPassword(email, password);
-      
-      if (!cred.user) {
-        throw new Error('User creation failed');
-      }
-      
-      // Create user profile
+      if (!cred.user) throw new Error('User creation failed');
+
       const userDataToSave = {
         uid: cred.user.uid,
         email: cred.user.email,
@@ -201,14 +195,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role,
         verificationStatus: 'pending',
       };
-      
+
       await db.collection('users').doc(cred.user.uid).set(userDataToSave);
 
-      // Create role-specific profile
       const roleCollection = role === 'buyer' ? 'buyers' : role === 'seller' ? 'sellers' : 'runners';
       await db.collection(roleCollection).doc(cred.user.uid).set(userDataToSave);
 
-      // Add NIN verification notification for sellers and runners
       if (role === 'seller' || role === 'runner') {
         const notificationData = {
           title: 'NIN Verification Required',
@@ -219,20 +211,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           action: 'navigate_to_verification',
           userRole: role,
         };
-        
-        await db.collection('users').doc(cred.user.uid)
-          .collection('notifications').add(notificationData);
+        await db.collection('users').doc(cred.user.uid).collection('notifications').add(notificationData);
       }
 
-      // Send verification email immediately after registration
       try {
         await cred.user.sendEmailVerification();
-        } catch (emailError) {
+      } catch (emailError) {
         console.error('Failed to send verification email after registration:', emailError);
-        // Don't throw error here as registration was successful
       }
-
-      } catch (error) {
+    } catch (error) {
       console.error('Registration error:', error);
       throw error;
     }
@@ -240,12 +227,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      // Clear stored credentials on logout
       try {
         await clearUserCredentials();
-      } catch (storageError) {
-        console.warn('Failed to clear user credentials during logout:', storageError);
-        // Continue with logout even if storage fails
+      } catch (storageErr) {
+        console.error('Storage error - Failed to clear credentials on logout:', storageErr);
+        // Continue with logout even if storage clearing fails
       }
       await auth.signOut();
     } catch (error) {
@@ -255,102 +241,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const sendVerificationEmail = async () => {
+    if (!auth.currentUser || auth.currentUser.emailVerified) return;
+
     try {
-      if (!auth.currentUser) {
-        throw new Error('No user is currently signed in');
-      }
-
-      if (auth.currentUser.emailVerified) {
-        return;
-      }
-
-      // Try multiple approaches for better deliverability
-      try {
-        // First attempt: Use minimal settings
-        const actionCodeSettings = {
-          url: 'https://airrands.com/verify-email',
-          handleCodeInApp: false
-        };
-        await auth.currentUser.sendEmailVerification(actionCodeSettings);
-        } catch (customError) {
-        // Fallback: Use default settings
-        await auth.currentUser.sendEmailVerification();
-        }
-      
-    } catch (error) {
-      console.error('Email verification error:', error);
-      throw error;
+      const actionCodeSettings = { url: 'https://airrands.com/verify-email', handleCodeInApp: false };
+      await auth.currentUser.sendEmailVerification(actionCodeSettings);
+    } catch {
+      await auth.currentUser?.sendEmailVerification();
     }
   };
 
   const resendVerificationEmail = async () => {
+    if (!auth.currentUser || auth.currentUser.emailVerified) return;
+
     try {
-      if (!auth.currentUser) {
-        throw new Error('No user is currently signed in');
-      }
-
-      if (auth.currentUser.emailVerified) {
-        return;
-      }
-
-      // Try multiple approaches for better deliverability
-      try {
-        // First attempt: Use minimal settings
-        const actionCodeSettings = {
-          url: 'https://airrands.com/verify-email',
-          handleCodeInApp: false
-        };
-        await auth.currentUser.sendEmailVerification(actionCodeSettings);
-        } catch (customError) {
-        // Fallback: Use default settings
-        await auth.currentUser.sendEmailVerification();
-        }
-      
-    } catch (error) {
-      console.error('Email verification error:', error);
-      throw error;
+      const actionCodeSettings = { url: 'https://airrands.com/verify-email', handleCodeInApp: false };
+      await auth.currentUser.sendEmailVerification(actionCodeSettings);
+    } catch {
+      await auth.currentUser?.sendEmailVerification();
     }
   };
 
   const deleteUserAccount = async () => {
     try {
       const currentUser = auth.currentUser;
-      if (!currentUser) {
-        throw new Error('No user is currently signed in');
-      }
+      if (!currentUser) throw new Error('No user signed in');
 
       const uid = currentUser.uid;
-
-      // Delete from all Firestore collections
       const batch = db.batch();
-      
-      // Delete from users collection
+
       const userRef = db.collection('users').doc(uid);
       batch.delete(userRef);
+      batch.delete(db.collection('buyers').doc(uid));
+      batch.delete(db.collection('sellers').doc(uid));
+      batch.delete(db.collection('runners').doc(uid));
 
-      // Delete from role-specific collections
-      const buyersRef = db.collection('buyers').doc(uid);
-      const sellersRef = db.collection('sellers').doc(uid);
-      const runnersRef = db.collection('runners').doc(uid);
-      
-      batch.delete(buyersRef);
-      batch.delete(sellersRef);
-      batch.delete(runnersRef);
-
-      // Delete user's notifications
       const notificationsRef = db.collection('users').doc(uid).collection('notifications');
-      const notificationsSnapshot = await notificationsRef.get();
-      notificationsSnapshot.docs.forEach(doc => {
-        batch.delete(doc.ref);
-      });
+      const snapshot = await notificationsRef.get();
+      snapshot.docs.forEach(doc => batch.delete(doc.ref));
 
-      // Execute batch delete
       await batch.commit();
-
-      // Delete from Firebase Auth
       await currentUser.delete();
-      
-      } catch (error) {
+    } catch (error) {
       console.error('Error deleting user account:', error);
       throw error;
     }
@@ -358,7 +290,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkEmailAvailability = async (email: string): Promise<boolean> => {
     try {
-      // Check if email exists in Firebase Auth
       const methods = await auth.fetchSignInMethodsForEmail(email);
       return methods.length === 0;
     } catch (error) {
@@ -369,14 +300,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkAndReloadEmailVerification = async (): Promise<boolean> => {
     try {
-      if (!auth.currentUser) {
-        return false;
-      }
-
-      // Reload user to get latest verification status
+      if (!auth.currentUser) return false;
       await auth.currentUser.reload();
-      
-      // Update user state with fresh verification status
       const userData: User = {
         uid: auth.currentUser.uid,
         email: auth.currentUser.email,
@@ -384,9 +309,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         photoURL: auth.currentUser.photoURL,
         emailVerified: auth.currentUser.emailVerified,
       };
-      
       setUser(userData);
-      
       return userData.emailVerified;
     } catch (error) {
       console.error('Error checking email verification:', error);
@@ -406,16 +329,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userData);
       const userRole = await ensureUserProfile(auth.currentUser);
       setRole(userRole as UserRole);
-      }
+    }
   };
 
-  const getStoredEmail = async (): Promise<string | null> => {
-    return await getUserEmail();
-  };
-
-  const getRememberMePreference = async (): Promise<boolean> => {
-    return await getRememberMe();
-  };
+  const getStoredEmail = async (): Promise<string | null> => await getUserEmail();
+  const getRememberMePreference = async (): Promise<boolean> => await getRememberMe();
 
   const value: AuthContextType = {
     user,
@@ -435,17 +353,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     getRememberMePreference,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
-}; 
+};

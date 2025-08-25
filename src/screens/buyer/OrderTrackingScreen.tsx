@@ -425,35 +425,36 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
         setDoc(null);
         return;
       }
+  
       setDoc({
         id: snapshot.id,
         status: data.status || 'pending',
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate(),
+        createdAt: normalizeDate(data.createdAt) || new Date(),
+        updatedAt: normalizeDate(data.updatedAt),
         orderNumber: data.orderNumber,
-        
+  
         // Product Information
         productId: data.productId,
         productName: data.productName,
         price: data.price,
         quantity: data.quantity,
         totalAmount: data.totalAmount,
-        
+  
         // User Information
         buyerId: data.buyerId,
         buyerName: data.buyerName,
         buyerEmail: data.buyerEmail,
         sellerId: data.sellerId,
         sellerName: data.sellerName,
-        
+  
         // Payment Information
         paymentMethod: data.paymentMethod,
         paymentStatus: data.paymentStatus,
         paymentReference: data.paymentReference,
-        
+  
         // Delivery Information
         deliveryOption: data.deliveryOption,
-        
+  
         runnerLocation: data.runnerLocation,
         store: data.store,
         customer: data.customer,
@@ -462,17 +463,22 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
         runnerPhone: data.runnerPhone,
         runnerAvatar: data.runnerAvatar,
         runnerRating: data.runnerRating,
-        lastLocationUpdate: data.lastLocationUpdate?.toDate(),
-        statusHistory: data.statusHistory || []
+        lastLocationUpdate: normalizeDate(data.lastLocationUpdate),
+        statusHistory: (data.statusHistory || []).map((s: any) => ({
+          ...s,
+          timestamp: normalizeDate(s.timestamp),
+        })),
       });
+  
       setLoading(false);
     }, (error) => {
       console.error('Firestore listener error:', error);
       setLoading(false);
     });
-    
+  
     return () => unsubscribe();
   }, [id, type]);
+  
 
   // Get user location on mount
   useEffect(() => {

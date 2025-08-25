@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
@@ -10,6 +11,7 @@ import {
   ActivityIndicator,
   Dimensions,
   RefreshControl,
+  Image
 } from 'react-native';
 import { 
   Text, 
@@ -41,6 +43,7 @@ import { sendOrderNotification } from '../../services/notificationService';
 import { getProfile } from '../../services/sellerServices';
 import Constants from 'expo-constants';
 import { PAYSTACK_PUBLIC_KEY } from '../../config/paystack';
+import ConfettiCannon from 'react-native-confetti-cannon';
 
 // Utility function for accurate distance calculation using Haversine formula
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -108,9 +111,6 @@ const paymentMethods: PaymentMethod[] = [
 const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: CheckoutScreenProps) => {
   const { theme } = useTheme();
   const { productId, sellerId, productName, price } = route.params;
-  
-
-  
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('1');
   const [quantity, setQuantity] = useState(route.params.quantity || 1);
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -126,6 +126,9 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
   const [deliveryOption, setDeliveryOption] = useState<'pickup' | 'delivery'>('delivery');
   const [sellerInfo, setSellerInfo] = useState<{name: string; avatar?: string; address?: string} | null>(null);
   const [loadingSeller, setLoadingSeller] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const confettiRef = useRef(null);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // Fetch seller information
   useEffect(() => {
@@ -230,6 +233,22 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
       })();
     }
   }, [showRunnerSelection]);
+
+  useEffect(() => {
+    if (orderPlaced) {
+      setShowConfetti(true);
+      
+      // Fade in animation for success icon
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }).start();
+      
+      const timer = setTimeout(() => setShowConfetti(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [orderPlaced]);
 
   const { user } = useAuth();
   const functions = getFunctions();
@@ -582,6 +601,8 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
     setPaystackTxnRef(''); // Clear the transaction reference
   };
 
+
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
@@ -659,110 +680,6 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
             </View>
           </View>
 
-          {/* Delivery Options */}
-          <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
-            <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
-              Delivery Option
-            </Text>
-            
-            <View style={styles.deliveryOptions}>
-              <TouchableOpacity
-                onPress={() => setDeliveryOption('delivery')}
-                style={[
-                  styles.deliveryOption,
-                  deliveryOption === 'delivery' && {
-                    borderColor: theme.colors.primary,
-                    backgroundColor: `${theme.colors.primary}10`
-                  }
-                ]}
-              >
-                <MaterialCommunityIcons 
-                  name="bike" 
-                  size={24} 
-                  color={deliveryOption === 'delivery' ? theme.colors.primary : theme.colors.onSurfaceVariant} 
-                />
-                <View style={styles.deliveryOptionInfo}>
-                  <Text 
-                    variant="bodyLarge" 
-                    style={[
-                      styles.deliveryOptionName,
-                      deliveryOption === 'delivery' && { color: theme.colors.primary }
-                    ]}
-                  >
-                    Delivery
-                  </Text>
-                  <Text 
-                    variant="bodySmall" 
-                    style={[styles.deliveryOptionDetails, { color: theme.colors.onSurfaceVariant }]}
-                  >
-                    Get delivered by a runner
-                  </Text>
-                </View>
-                {deliveryOption === 'delivery' && (
-                  <View style={[styles.deliveryOptionCheck, { backgroundColor: theme.colors.primary }]}>
-                    <MaterialIcons name="check" size={16} color="#fff" />
-                  </View>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setDeliveryOption('pickup')}
-                style={[
-                  styles.deliveryOption,
-                  deliveryOption === 'pickup' && {
-                    borderColor: theme.colors.primary,
-                    backgroundColor: `${theme.colors.primary}10`
-                  }
-                ]}
-              >
-                <MaterialCommunityIcons 
-                  name="store" 
-                  size={24} 
-                  color={deliveryOption === 'pickup' ? theme.colors.primary : theme.colors.onSurfaceVariant} 
-                />
-                <View style={styles.deliveryOptionInfo}>
-                  <Text 
-                    variant="bodyLarge" 
-                    style={[
-                      styles.deliveryOptionName,
-                      deliveryOption === 'pickup' && { color: theme.colors.primary }
-                    ]}
-                  >
-                    Pickup
-                  </Text>
-                  <Text 
-                    variant="bodySmall" 
-                    style={[styles.deliveryOptionDetails, { color: theme.colors.onSurfaceVariant }]}
-                  >
-                    Pick up from store
-                  </Text>
-                </View>
-                {deliveryOption === 'pickup' && (
-                  <View style={[styles.deliveryOptionCheck, { backgroundColor: theme.colors.primary }]}>
-                    <MaterialIcons name="check" size={16} color="#fff" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            </View>
-
-            {/* Runner Selection for Delivery */}
-            {deliveryOption === 'delivery' && (
-              <View style={styles.runnerSelectionSection}>
-                <Text variant="titleSmall" style={[styles.runnerSelectionTitle, { color: theme.colors.onSurface }]}>
-                  Select Runner
-                </Text>
-                <Button
-                  mode="outlined"
-                  onPress={() => setShowRunnerSelection(true)}
-                  style={[styles.runnerSelectionButton, { borderColor: theme.colors.primary }]}
-                  labelStyle={{ color: theme.colors.primary }}
-                >
-                  {selectedRunner ? `Selected: ${selectedRunner.name}` : 'Choose Runner'}
-                </Button>
-              </View>
-            )}
-          </View>
-
           {/* Payment Methods */}
           <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
             <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
@@ -834,32 +751,74 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
           </Button>
         </ScrollView>
       ) : (
-        <View style={styles.successContainer}>
-          <View style={[styles.successIcon]}>
-            <MaterialIcons name="check-circle" size={100} color={theme.colors.primary} />
+        <ScrollView style={styles.successContainer}>
+          {/* Confetti Animation */}
+          {showConfetti && (
+            <ConfettiCannon
+              count={200}
+              origin={{ x: Dimensions.get('window').width / 2, y: 0 }}
+              fallSpeed={3000}
+              fadeOut={true}
+              autoStart={true}
+              ref={confettiRef}
+            />
+          )}
+          
+          {/* Success Icon with Animation */}
+          <Animated.View 
+            style={[
+              styles.successIconContainer,
+              { opacity: fadeAnim }
+            ]}
+          >
+            <View style={[styles.successIcon, { backgroundColor: `${theme.colors.primary}15` }]}>
+              <MaterialIcons name="check-circle" size={80} color={theme.colors.primary} />
             </View>
-            
+          </Animated.View>
+          
           <Text variant="headlineSmall" style={[styles.successTitle, { color: theme.colors.onSurface }]}>
             Order Confirmed!
           </Text>
           
           <Text variant="bodyLarge" style={[styles.successMessage, { color: theme.colors.onSurfaceVariant }]}>
-            Your order has been placed successfully. Would you like to arrange delivery?
+            Your order has been placed successfully. Your order number is:
           </Text>
-
-          {/* Order Summary */}
-          <View style={[styles.orderSummaryCard, { backgroundColor: theme.colors.surface }]}>
-            <Text variant="titleMedium" style={[styles.orderSummaryTitle, { color: theme.colors.onSurface }]}>
-              Order Summary
+          
+          <View style={[styles.orderNumberContainer, { backgroundColor: theme.colors.primary + '15' }]}>
+            <Text variant="titleMedium" style={[styles.orderNumber, { color: theme.colors.primary }]}>
+              {generateOrderNumber(orderId)}
             </Text>
-            <View style={styles.orderSummaryRow}>
-              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                {productName}
-              </Text>
-              <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
-                Qty: {quantity}
+          </View>
+
+          {/* Order Summary Card */}
+          <View style={[styles.orderSummaryCard, { backgroundColor: theme.colors.surface }]}>
+            <View style={styles.orderSummaryHeader}>
+              <MaterialIcons name="receipt" size={20} color={theme.colors.primary} />
+              <Text variant="titleMedium" style={[styles.orderSummaryTitle, { color: theme.colors.onSurface }]}>
+                Order Details
               </Text>
             </View>
+            
+            <View style={styles.orderSummaryDivider} />
+            
+            <View style={styles.orderSummaryRow}>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                Product:
+              </Text>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurface, textAlign: 'right', flex: 1 }}>
+                {productName}
+              </Text>
+            </View>
+            
+            <View style={styles.orderSummaryRow}>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                Quantity:
+              </Text>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
+                {quantity}
+              </Text>
+            </View>
+            
             <View style={styles.orderSummaryRow}>
               <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
                 Unit Price:
@@ -868,6 +827,9 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
                 ₦{price.toLocaleString()}
               </Text>
             </View>
+            
+            <View style={[styles.orderSummaryDivider, { marginVertical: 12 }]} />
+            
             <View style={[styles.orderSummaryRow, styles.totalRow]}>
               <Text variant="titleMedium" style={[styles.totalLabel, { color: theme.colors.onSurface }]}>
                 Total:
@@ -876,127 +838,106 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
                 ₦{(price * quantity).toLocaleString()}
               </Text>
             </View>
-          </View>
-
-          {/* Runner Selection Toggle */}
-          <View style={[styles.runnerToggleSection, { backgroundColor: theme.colors.surface }]}>
-            <View style={styles.runnerToggleRow}>
-              <View style={styles.runnerToggleInfo}>
-                <Text variant="titleMedium" style={[styles.runnerToggleTitle, { color: theme.colors.onSurface }]}>
-                  Arrange Delivery
-                </Text>
-                <Text variant="bodySmall" style={[styles.runnerToggleSubtitle, { color: theme.colors.onSurfaceVariant }]}>
-                  Get your order delivered by a nearby runner
+            
+            <View style={styles.orderSummaryDivider} />
+            
+            <View style={styles.orderSummaryRow}>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                Delivery Method:
+              </Text>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
+                {deliveryOption === 'delivery' ? 'Home Delivery' : 'Store Pickup'}
+              </Text>
+            </View>
+            
+            <View style={styles.orderSummaryRow}>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                Status:
+              </Text>
+              <View style={[styles.statusBadge, { backgroundColor: theme.colors.primary + '20' }]}>
+                <Text variant="labelSmall" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
+                  CONFIRMED
                 </Text>
               </View>
-              <Switch
-                value={showRunnerSelection}
-                onValueChange={setShowRunnerSelection}
-                color={theme.colors.primary}
-              />
             </View>
+          </View>
 
-            {showRunnerSelection && (
-              <View style={styles.runnerSelectionContainer}>
-                <View style={styles.runnerSelectionHeader}>
-                <Text variant="bodyMedium" style={[styles.runnerSelectionTitle, { color: theme.colors.onSurface }]}>
-                  Select a Runner
+          {/* Next Steps Card */}
+          <View style={[styles.nextStepsCard, { backgroundColor: theme.colors.surface }]}>
+            <Text variant="titleMedium" style={[styles.nextStepsTitle, { color: theme.colors.onSurface }]}>
+              What's Next?
+            </Text>
+            
+            <View style={styles.nextStepItem}>
+              <View style={[styles.stepIcon, { backgroundColor: theme.colors.primary + '15' }]}>
+                <MaterialIcons name="access-time" size={20} color={theme.colors.primary} />
+              </View>
+              <View style={styles.stepText}>
+                <Text variant="bodyLarge" style={{ color: theme.colors.onSurface, fontWeight: '500' }}>
+                  Seller is preparing your order
                 </Text>
-                  <TouchableOpacity
-                    onPress={refreshRunners}
-                    style={styles.refreshButton}
-                  >
-                    <MaterialIcons name="refresh" size={20} color={theme.colors.primary} />
-                  </TouchableOpacity>
+                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
+                  You'll be notified when it's ready for {deliveryOption === 'delivery' ? 'delivery' : 'pickup'}
+                </Text>
+              </View>
+            </View>
+            
+            {deliveryOption === 'delivery' && (
+              <View style={styles.nextStepItem}>
+                <View style={[styles.stepIcon, { backgroundColor: theme.colors.primary + '15' }]}>
+                  <MaterialCommunityIcons name="bike" size={20} color={theme.colors.primary} />
                 </View>
-                {runners.length === 0 ? (
-                  <Text style={[styles.noRunnersText, { color: theme.colors.onSurfaceVariant }]}>
-                    No runners available in your area at the moment.
+                <View style={styles.stepText}>
+                  <Text variant="bodyLarge" style={{ color: theme.colors.onSurface, fontWeight: '500' }}>
+                    Arrange delivery
                   </Text>
-                ) : (
-                  <>
-                    {runners.map((runner: any) => {
-                      // Calculate distance for display
-                      const distance = buyerLocation ? calculateDistance(
-                        buyerLocation.latitude,
-                        buyerLocation.longitude,
-                        runner.latitude,
-                        runner.longitude
-                      ) : 0;
-                      
-                      return (
-                      <TouchableOpacity
-                        key={runner.id}
-                        style={[
-                          styles.runnerOption,
-                          selectedRunner?.id === runner.id && {
-                            borderColor: theme.colors.primary,
-                            backgroundColor: theme.colors.primary + '20',
-                          }
-                        ]}
-                        onPress={() => setSelectedRunner(runner)}
-                      >
-                        <View style={styles.runnerOptionInfo}>
-                          <Text style={[styles.runnerName, { color: theme.colors.onSurface }]}>
-                            {runner.name}
-                          </Text>
-                          <Text style={[styles.runnerRating, { color: theme.colors.onSurfaceVariant }]}>
-                              Rating: {runner.rating || 'N/A'} • {runner.deliveries || 0} deliveries • {distance.toFixed(1)}km away
-                            </Text>
-                            <View style={styles.runnerStatusRow}>
-                              <View style={[styles.statusIndicator, { backgroundColor: runner.isOnline ? '#4CAF50' : '#FF9800' }]}>
-                                <Text style={styles.statusText}>
-                                  {runner.isOnline ? 'Online' : 'Offline'}
-                          </Text>
-                              </View>
-                              {runner.lastSeen && (
-                                <Text style={[styles.lastSeenText, { color: theme.colors.onSurfaceVariant }]}>
-                                  Last seen: {new Date(runner.lastSeen).toLocaleTimeString()}
-                                </Text>
-                              )}
-                            </View>
-                        </View>
-                        {selectedRunner?.id === runner.id && (
-                          <MaterialIcons name="check-circle" size={24} color={theme.colors.primary} />
-                        )}
-                      </TouchableOpacity>
-                      );
-                    })}
-                    <Button
-                      mode="contained"
-                      onPress={handleRunnerSelection}
-                      disabled={!selectedRunner}
-                      style={[styles.assignRunnerButton, { backgroundColor: theme.colors.primary }]}
-                      contentStyle={styles.assignRunnerButtonContent}
-                    >
-                      Assign Runner
-                    </Button>
-                  </>
-                )}
+                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
+                    Select a runner to deliver your order
+                  </Text>
+                </View>
               </View>
             )}
           </View>
 
-        <Button
-          mode="contained"
-            onPress={handleTrackOrder}
-            style={[styles.trackButton, { backgroundColor: theme.colors.primary }]}
-            contentStyle={styles.trackButtonContent}
-            labelStyle={styles.trackButtonLabel}
-          >
-            Track Order
-          </Button>
-          
-          <Button
-            mode="outlined"
-            onPress={() => navigation.goBack()}
-            style={[styles.backButton, { borderColor: theme.colors.outline }]}
-            contentStyle={styles.backButtonContent}
-            textColor={theme.colors.onSurface}
-          >
-            Back to Home
-        </Button>
-      </View>
+          {/* Action Buttons */}
+          <View style={styles.actionButtonsContainer}>
+            <Button
+              mode="contained"
+              onPress={handleTrackOrder}
+              style={[styles.trackButton, { backgroundColor: theme.colors.primary }]}
+              contentStyle={styles.trackButtonContent}
+              labelStyle={styles.trackButtonLabel}
+              icon="map-marker-path"
+            >
+              Track Order
+            </Button>
+            
+            {deliveryOption === 'delivery' && (
+              <Button
+                mode="outlined"
+                onPress={() => setShowRunnerSelection(true)}
+                style={[styles.runnerButton, { borderColor: theme.colors.primary }]}
+                contentStyle={styles.runnerButtonContent}
+                labelStyle={{ color: theme.colors.primary }}
+                icon="account-plus"
+              >
+                Select Runner
+              </Button>
+            )}
+            
+            <Button
+              mode="text"
+              onPress={() => navigation.navigate('BuyerApp')}
+              style={styles.homeButton}
+              contentStyle={styles.homeButtonContent}
+              textColor={theme.colors.onSurfaceVariant}
+              icon="home"
+            >
+              Back to Home
+            </Button>
+          </View>
+        </ScrollView>
+
       )}
       {showPaystack && paystackTxnRef && (
         <Portal>
@@ -1061,7 +1002,6 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1146,20 +1086,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 8,
   },
-  priceLabel: {
-    fontSize: 14,
-  },
-  priceValue: {
-    fontWeight: '500',
-  },
   totalLabel: {
     fontWeight: '600',
   },
   totalValue: {
     fontWeight: '700',
-  },
-  input: {
-    marginBottom: 16,
   },
   paymentMethod: {
     flexDirection: 'row',
@@ -1201,33 +1132,121 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  
+  // NEW STYLES FOR ORDER CONFIRMATION SCREEN
   successContainer: {
     flex: 1,
-    justifyContent: 'center',
+    padding: 20,
+    paddingBottom: 40,
+  },
+  successIconContainer: {
     alignItems: 'center',
-    padding: 32,
+    marginVertical: 20,
   },
   successIcon: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
   },
   successTitle: {
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 8,
     textAlign: 'center',
+    fontSize: 24,
   },
   successMessage: {
     textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 24,
+    marginBottom: 16,
+    lineHeight: 22,
+  },
+  orderNumberContainer: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  orderNumber: {
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  orderSummaryCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  orderSummaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  orderSummaryTitle: {
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  orderSummaryDivider: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 8,
+  },
+  orderSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  totalRow: {
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  nextStepsCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  nextStepsTitle: {
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  nextStepItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  stepIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  stepText: {
+    flex: 1,
+  },
+  actionButtonsContainer: {
+    width: '100%',
+    paddingBottom: 40,
   },
   trackButton: {
     borderRadius: 12,
-    width: '100%',
+    marginBottom: 12,
   },
   trackButtonContent: {
     height: 52,
@@ -1236,14 +1255,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  backButton: {
+  runnerButton: {
     borderRadius: 12,
-    width: '100%',
-    marginTop: 12,
+    marginBottom: 12,
   },
-  backButtonContent: {
+  runnerButtonContent: {
     height: 52,
   },
+  homeButton: {
+    marginTop: 8,
+  },
+  homeButtonContent: {
+    height: 52,
+  },
+  
+  // Runner selection styles (kept from original)
   runnerToggleSection: {
     borderRadius: 12,
     padding: 16,
@@ -1403,32 +1429,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  orderSummaryCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 16,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  orderSummaryTitle: {
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  orderSummaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  totalRow: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
 });
-
-export default CheckoutScreen; 
+export default CheckoutScreen;
