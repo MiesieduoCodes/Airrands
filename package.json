@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "start": "npx expo start",
+    "android": "npx expo start --android",
+    "ios": "npx expo start --ios",
+    "web": "npx expo start --web",
+    "dev-client": "npx expo start --dev-client",
+    "build-dev-android": "eas build --platform android --profile development",
+    "build-preview": "eas build --platform android --profile preview"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -27,7 +30,7 @@
     "react": "19.0.0",
     "react-native": "^0.79.5",
     "react-native-animatable": "^1.4.0",
-    "react-native-confetti-cannon": "^1.5.2",
+    "react-native-confetti": "^0.1.0",
     "react-native-dotenv": "^3.4.11",
     "react-native-draggable-flatlist": "^4.0.3",
     "react-native-gesture-handler": "^2.24.0",

@@ -8,8 +8,7 @@ import { getRunnerProfile, requestErrand } from '../../services/buyerServices';
 import { useAuth } from '../../contexts/AuthContext';
 import ErrandRequestModal from '../../components/ErrandRequestModal';
 import { COLORS } from '../../constants/colors';
-// @ts-ignore
-const PaystackWebView = require('react-native-paystack-webview');
+import PaystackWebView from 'react-native-paystack-webview';
 import Constants from 'expo-constants';
 import { PAYSTACK_PUBLIC_KEY } from '../../config/paystack';
 

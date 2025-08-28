@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   View, 
@@ -18,8 +19,7 @@ import {
   Chip, 
   ActivityIndicator 
 } from 'react-native-paper';
-// Replace your MapView import with:
-import MapView, { Marker, PROVIDER_DEFAULT, UrlTile } from 'react-native-maps';
+import RealTimeMap from '../../components/RealTimeMap';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -39,7 +39,7 @@ import { DocumentReference } from 'firebase/firestore';
 import { haversineDistance, formatDistance, calculateAndFormatDistance, isValidCoordinate } from '../../utils/distance';
 import { addSampleData, checkDataExists } from '../../utils/sampleData';
 // @ts-ignore
-const PaystackWebView = require('react-native-paystack-webview');
+import PaystackWebView from 'react-native-paystack-webview';
 import * as Location from 'expo-location';
 
 const { width, height } = Dimensions.get('window');
@@ -833,13 +833,6 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Loading Overlay */}
-      {loading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-        </View>
-      )}
-
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
         <View style={styles.headerContent}>
@@ -879,126 +872,59 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
 
     {/* Map Section */}
     <Animated.View style={[styles.mapContainer, { height: mapHeight }]}>
-      {!mapReady && !mapError ? (
-        <View style={[styles.map, styles.errorContainer]}>
-          <MaterialCommunityIcons name="map" size={48} color={theme.colors.primary} />
-          <Text style={[styles.errorText, { color: theme.colors.onSurface }]}>
-            Loading Map...
-          </Text>
-          <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 16 }} />
-        </View>
-      ) : mapError ? (
-        <View style={[styles.map, styles.errorContainer]}>
-          <MaterialCommunityIcons name="map-marker-off" size={48} color={theme.colors.error} />
-          <Text style={[styles.errorText, { color: theme.colors.error }]}>
-            Map failed to load
-          </Text>
-          <Text style={[styles.errorSubtext, { color: theme.colors.onSurfaceVariant }]}>
-            {mapError}
-          </Text>
-          <Button mode="outlined" onPress={() => {
-            setMapError(null);
-            setMapReady(false);
-            setForceMapRender(prev => prev + 1);
-          }} style={{ marginTop: 16 }}>
-            Retry
-          </Button>
-        </View>
-      ) : (
-        <View style={styles.map}>
-          <MapView
-            key={`map-${forceMapRender}`}
-            style={StyleSheet.absoluteFillObject}
-            initialRegion={{
-              latitude: userLocation?.latitude || 6.5244,
-              longitude: userLocation?.longitude || 3.3792,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-            region={userLocation ? {
-              latitude: userLocation.latitude,
-              longitude: userLocation.longitude,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            } : undefined}
-            onMapReady={() => {
-              console.log('Map is ready');
-              setMapReady(true);
-            }}
-            showsUserLocation={true}
-            showsMyLocationButton={true}
-            followsUserLocation={true}
-            showsCompass={true}
-            zoomEnabled={true}
-            scrollEnabled={true}
-            rotateEnabled={true}
-            provider={PROVIDER_DEFAULT}
-          >
-            {/* OpenStreetMap Satellite Tiles */}
-            <UrlTile
-              urlTemplate="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              maximumZ={19}
-            />
-
-            {/* Store Markers */}
-            {mapReady && filteredStores.map((store) => (
-              <Marker
-                key={`store-${store.id}`}
-                coordinate={{
+      <RealTimeMap
+        height={mapHeight as number}
+                markers={[
+          // User location marker (buyer)
+          ...(userLocation ? [{
+            id: 'user-location',
+            coordinate: userLocation,
+            title: 'Your Location',
+            description: 'You are here',
+            type: 'user' as const,
+            data: null,
+            onPress: () => {},
+          }] : []),
+          // Store markers
+          ...filteredStores.map((store) => ({
+            id: `store-${store.id}`,
+            coordinate: {
                   latitude: store.latitude, 
-                  longitude: store.longitude
-                }}
-                onPress={() => handleStorePress(store)}
-              >
-                <View style={styles.markerContainer}>
-                  <MaterialCommunityIcons 
-                    name={
-                      store.type === 'groceries' ? 'food' : 
-                      store.type === 'grocery' ? 'basket' : 'store'
-                    }
-                    size={24}
-                    color={theme.colors.onPrimary}
-                    style={[styles.markerIcon, { backgroundColor: theme.colors.primary }]}
-                  />
-                  <View style={[styles.markerBadge, { backgroundColor: theme.colors.primary }]}>
-                    <Text style={styles.markerText}>⭐ {formatRating(store.rating)}</Text>
-                  </View>
-                </View>
-              </Marker>
-            ))}
-            
-            {/* Runner Markers */}
-            {mapReady && filteredRunners.map((runner) => (
-              <Marker
-                key={`runner-${runner.id}`}
-                coordinate={{
+              longitude: store.longitude,
+            },
+            title: store.name,
+            description: `${store.type} • ⭐ ${formatRating(store.rating)} • ${store.distance}`,
+            type: 'store' as const,
+            data: store,
+            onPress: () => handleStorePress(store),
+          })),
+          // Runner markers
+          ...filteredRunners.map((runner) => ({
+            id: `runner-${runner.id}`,
+            coordinate: {
                   latitude: runner.latitude, 
-                  longitude: runner.longitude
-                }}
-                onPress={() => handleRunnerPress(runner)}
-              >
-                <View style={styles.runnerMarker}>
-                  <Avatar.Image 
-                    source={{ uri: runner.image }} 
-                    size={40}
-                    style={[
-                      styles.runnerAvatar,
-                      { 
-                        borderColor: runner.status === 'available' 
-                          ? theme.colors.secondary 
-                          : theme.colors.outline 
-                      }
-                    ]}
-                  />
-                  {runner.status === 'available' && (
-                    <View style={[styles.runnerBadge, { backgroundColor: theme.colors.secondary }]} />
-                  )}
-                </View>
-              </Marker>
-            ))}
-          </MapView>
-        </View>
-      )}
+              longitude: runner.longitude,
+            },
+            title: runner.name,
+            description: `${runner.status} • ${runner.deliveries} deliveries • ${runner.distance}`,
+            type: 'runner' as const,
+            data: runner,
+            onPress: () => handleRunnerPress(runner),
+          })),
+        ]}
+        realTimeUpdates={true}
+        updateInterval={15000}
+        onLocationUpdate={(location) => {
+          if (userLocation?.latitude !== location.latitude || userLocation?.longitude !== location.longitude) {
+            setUserLocation(location);
+          }
+        }}
+        onMarkerPress={(marker) => {
+          if (marker.onPress) {
+            marker.onPress();
+          }
+        }}
+      />
       <TouchableOpacity 
         onPress={toggleMapSize}
         style={[styles.mapToggle, { backgroundColor: theme.colors.surface }]}
@@ -1320,22 +1246,22 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
       />
 
       {/* PayStack Payment for Errand Requests */}
-      {showPaystack && pendingErrand && (
-        <PaystackWebView
-          paystackKey={PAYSTACK_PUBLIC_KEY}
-          amount={Number(pendingErrand.budget)}
-          billingEmail={user?.email || ''}
-          billingName={user?.displayName || 'User'}
-          activityIndicatorColor={theme.colors.primary}
-          onSuccess={handlePaystackSuccess}
-          onCancel={handlePaystackCancel}
-          reference={paystackTxnRef}
-          autoStart={true}
-          channels={["card", "bank", "ussd"]}
-          currency="NGN"
-          description={`Payment for errand: ${pendingErrand.title}`}
-        />
-      )}
+{showPaystack && pendingErrand && (
+  <PaystackWebView
+    paystackKey={PAYSTACK_PUBLIC_KEY}
+    amount={Number(pendingErrand.budget) * 100} // Convert to kobo
+    billingEmail={user?.email || ''}
+    billingName={user?.displayName || 'User'}
+    activityIndicatorColor={theme.colors.primary}
+    onSuccess={handlePaystackSuccess}
+    onCancel={handlePaystackCancel}
+    reference={paystackTxnRef}
+    autoStart={true}
+    channels={["card", "bank", "ussd"]}
+    currency="NGN"
+    description={`Payment for errand: ${pendingErrand.title}`}
+  />
+)}
     </SafeAreaView>
   );
 };
@@ -1344,13 +1270,6 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    zIndex: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   header: {
     paddingTop: 20,

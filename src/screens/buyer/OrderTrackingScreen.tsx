@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, SafeAreaView, Alert, ActivityIndicator, Dimensions, Platform } from 'react-native';
-import { Text, Card, Avatar, Divider, Button, ProgressBar, Chip, IconButton, TouchableRipple } from 'react-native-paper';
-import MapView, { Marker, Polyline, PROVIDER_DEFAULT, Region } from 'react-native-maps';
+import { Text, Card, Avatar, Divider, Button, Chip, IconButton, TouchableRipple } from 'react-native-paper';
+import RealTimeMap from '../../components/RealTimeMap';
 import { useTheme } from '../../contexts/ThemeContext';
-import * as polyline from '@mapbox/polyline';
 import { db } from '../../config/firebase';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { updateOrderStatus } from '../../services/buyerServices';
 import io from 'socket.io-client';
 import * as Location from 'expo-location';
 import { PRODUCTION_CONFIG } from '../../config/production';
-import { getDirections, getRegionForCoordinates, calculateETA } from '../../utils/maps';
+import { calculateETA } from '../../utils/maps';
 
 interface OrderTrackingScreenProps {
   route: {
@@ -61,14 +60,7 @@ const statusColors: Record<string, string> = {
   out_for_delivery: '#3F51B5',
 };
 
-const statusSteps = [
-  { key: 'confirmed', label: 'Confirmed', icon: 'check-circle-outline' },
-  { key: 'available', label: 'Available', icon: 'package-variant' },
-  { key: 'assigned', label: 'Assigned', icon: 'account-check-outline' },
-  { key: 'picked_up', label: 'Picked Up', icon: 'package-variant' },
-  { key: 'out_for_delivery', label: 'On The Way', icon: 'bike' },
-  { key: 'delivered', label: 'Delivered', icon: 'check-circle' },
-];
+
 
 const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, navigation }) => {
   // Prefer jobId, fallback to id
@@ -76,6 +68,33 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
   const type = route.params.jobType || route.params.type || 'order';
   const { role } = route.params;
   const { theme } = useTheme();
+
+  // Helper functions for status display
+  const getStatusIcon = (status: string): string => {
+    switch (status) {
+      case 'confirmed': return 'check-circle-outline';
+      case 'available': return 'package-variant';
+      case 'assigned': return 'account-check-outline';
+      case 'picked_up': return 'package-variant';
+      case 'out_for_delivery': return 'bike';
+      case 'delivered': return 'check-circle';
+      case 'completed': return 'check-circle';
+      default: return 'package-variant';
+    }
+  };
+
+  const getStatusDescription = (status: string): string => {
+    switch (status) {
+      case 'confirmed': return 'Order confirmed and ready for pickup';
+      case 'available': return 'Package is available at the store';
+      case 'assigned': return 'Runner has been assigned to your order';
+      case 'picked_up': return 'Runner has picked up your package';
+      case 'out_for_delivery': return 'Runner is on the way to you';
+      case 'delivered': return 'Package has been delivered successfully';
+      case 'completed': return 'Order completed successfully';
+      default: return 'Processing your order';
+    }
+  };
   interface OrderDocument {
     id: string;
     status: string;
@@ -143,36 +162,18 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
   const [estimatedTime, setEstimatedTime] = useState<string>('');
   const [eta, setEta] = useState<string>('');
   const [distance, setDistance] = useState<number>(0);
-  const [routeCoordinates, setRouteCoordinates] = useState<Array<{latitude: number; longitude: number}>>([]);
+
   const [userLocation, setUserLocation] = useState<{latitude: number; longitude: number} | null>(null);
   const [runnerLocation, setRunnerLocation] = useState<{latitude: number; longitude: number; heading?: number} | null>(null);
-  const [mapRegion, setMapRegion] = useState<Region | null>(null);
-  const mapRef = useRef<MapView>(null);
+
   
   // Socket configuration
   const SOCKET_URL = PRODUCTION_CONFIG.SOCKET_URL;
   const [socket, setSocket] = useState<any>(null);
   const [isConnected, setIsConnected] = useState(false);
 
-  // Update route on map
-  const updateRouteOnMap = async (start: any, end: any) => {
-    try {
-      const routeResult = await getDirections(start, end);
-      
-      if (routeResult) {
-        setRouteCoordinates(routeResult.points);
-        setDistance(routeResult.distance);
-        setEstimatedTime(calculateETA(routeResult.distance));
-        
-        // Update map region to show the entire route
-        const region = getRegionForCoordinates([start, end, ...routeResult.points]);
-        setMapRegion(region);
-        mapRef.current?.animateToRegion(region, 1000);
-      }
-    } catch (error) {
-      console.error('Error updating route:', error);
-    }
-  };
+
+    
 
   const normalizeDate = (value: any): Date | undefined => {
   if (!value) return undefined;
@@ -197,18 +198,7 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
 
   return undefined;
 };
-  // Calculate distance between two points
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c; // Distance in kilometers
-  };
+
 
 
   // Get user's current location and update map
@@ -234,10 +224,7 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
       
       setUserLocation(newUserLocation);
       
-      // If we have runner location, update the route
-      if (runnerLocation) {
-        updateRouteOnMap(newUserLocation, runnerLocation);
-      }
+
     } catch (error) {
       console.error('Error getting user location:', error);
       Alert.alert('Location Error', 'Unable to get your current location.');
@@ -277,18 +264,7 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
     }
   };
 
-  // Calculate progress percentage
-  const getProgressPercentage = () => {
-    if (!doc) return 0;
-    const currentIndex = statusSteps.findIndex(step => step.key === doc.status);
-    return currentIndex >= 0 ? (currentIndex + 1) / statusSteps.length : 0;
-  };
 
-  // Get current step index
-  const getCurrentStepIndex = () => {
-    if (!doc) return 0;
-    return statusSteps.findIndex(step => step.key === doc.status);
-  };
 
   // Calculate estimated time and distance
   useEffect(() => {
@@ -308,12 +284,10 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
 
     // Calculate distance and ETA if runner location is available
     if (doc?.runnerLocation && doc?.customer?.latitude && doc?.customer?.longitude) {
-      const distanceKm = calculateDistance(
-        doc.runnerLocation.latitude,
-        doc.runnerLocation.longitude,
-        doc.customer.latitude,
-        doc.customer.longitude
-      );
+      const distanceKm = Math.sqrt(
+        Math.pow(doc.runnerLocation.latitude - doc.customer.latitude, 2) +
+        Math.pow(doc.runnerLocation.longitude - doc.customer.longitude, 2)
+      ) * 111; // Rough conversion to km
       
       setDistance(distanceKm);
       setEta(calculateETA(distanceKm));
@@ -354,10 +328,7 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
             };
             setRunnerLocation(newLocation);
             
-            // Update route if we have both locations
-            if (userLocation) {
-              updateRouteOnMap(userLocation, newLocation);
-            }
+
           }
         });
 
@@ -399,7 +370,7 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
           if (data.id === id) {
             console.log('Received route update:', data);
             // Update route coordinates
-            setRouteCoordinates(data.route || []);
+    
           }
         });
 
@@ -494,38 +465,7 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
     getUserLocation();
   }, []);
 
-  // Auto-fit map to show all markers
-  useEffect(() => {
-    if (mapRef.current && doc) {
-      const coordinates = [];
-      
-      if (doc.runnerLocation) {
-        coordinates.push(doc.runnerLocation);
-      }
-      if (doc.store?.latitude) {
-        coordinates.push({
-          latitude: doc.store.latitude,
-          longitude: doc.store.longitude,
-        });
-      }
-      if (doc.customer?.latitude) {
-        coordinates.push({
-          latitude: doc.customer.latitude,
-          longitude: doc.customer.longitude,
-        });
-      }
-      if (userLocation) {
-        coordinates.push(userLocation);
-      }
 
-      if (coordinates.length > 0) {
-        mapRef.current.fitToCoordinates(coordinates, {
-          edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-          animated: true,
-        });
-      }
-    }
-  }, [doc, userLocation]);
 
   if (loading) {
     return (
@@ -580,7 +520,7 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
                 </View>
               </View>
               <View style={styles.infoItem}>
-                <MaterialCommunityIcons name="map-marker-distance" size={24} color={theme.colors.primary} />
+                <MaterialCommunityIcons name="map-marker-radius" size={24} color={theme.colors.primary} />
                 <View style={{ marginLeft: 8 }}>
                   <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>Distance</Text>
                   <Text variant="bodyLarge" style={{ fontWeight: 'bold' }}>{distance > 0 ? `${distance.toFixed(1)} km` : 'Calculating...'}</Text>
@@ -633,47 +573,56 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
           
           <Divider style={{ marginVertical: 16 }} />
           
-          {/* Status Progress */}
+          {/* Real-time Status */}
           <View style={styles.statusSection}>
-            <Text style={{ fontWeight: 'bold', marginBottom: 12 }}>Status Progress</Text>
-            <ProgressBar 
-              progress={getProgressPercentage()} 
-              color={theme.colors.primary} 
-              style={{ height: 8, borderRadius: 4, marginBottom: 16 }}
-            />
+            <Text style={{ fontWeight: 'bold', marginBottom: 12 }}>Live Status</Text>
             
-            {/* Status Steps */}
-            <View style={styles.statusSteps}>
-              {statusSteps.map((step, index) => {
-                const isCompleted = index <= getCurrentStepIndex();
-                const isCurrent = index === getCurrentStepIndex();
-                return (
-                  <View key={step.key} style={styles.statusStep}>
+            {/* Current Status with Icon */}
+            <View style={styles.liveStatusContainer}>
                     <View style={[
-                      styles.statusIcon,
-                      { 
-                        backgroundColor: isCompleted ? theme.colors.primary : theme.colors.surfaceVariant,
-                        borderColor: isCurrent ? theme.colors.primary : 'transparent'
-                      }
+                styles.statusIconLarge,
+                { backgroundColor: statusColors?.[doc.status] || theme.colors.primary }
                     ]}>
                       <MaterialCommunityIcons 
-                        name={step.icon as any} 
-                        size={20} 
-                        color={isCompleted ? 'white' : theme.colors.onSurfaceVariant} 
+                  name={getStatusIcon(doc.status)} 
+                  size={24} 
+                  color="white" 
                       />
                     </View>
-                    <Text style={[
-                      styles.statusLabel,
-                      { 
-                        color: isCompleted ? theme.colors.primary : theme.colors.onSurfaceVariant,
-                        fontWeight: isCurrent ? 'bold' : 'normal'
-                      }
-                    ]}>
-                      {step.label}
+              <View style={styles.statusInfo}>
+                <Text style={{ fontWeight: 'bold', fontSize: 16 }}>
+                  {statusLabels?.[doc.status] || doc.status}
+                </Text>
+                <Text style={{ color: theme.colors.onSurfaceVariant, marginTop: 2 }}>
+                  {getStatusDescription(doc.status)}
                     </Text>
                   </View>
-                );
-              })}
+            </View>
+
+            {/* Live Updates */}
+            <View style={styles.liveUpdatesContainer}>
+              <View style={styles.updateItem}>
+                <MaterialCommunityIcons name="clock-outline" size={16} color={theme.colors.primary} />
+                <Text style={{ marginLeft: 8, color: theme.colors.onSurfaceVariant }}>
+                  {estimatedTime ? `Started ${estimatedTime}` : 'Just started'}
+                </Text>
+              </View>
+              {eta && (
+                <View style={styles.updateItem}>
+                  <MaterialCommunityIcons name="map-marker-radius" size={16} color={theme.colors.secondary} />
+                  <Text style={{ marginLeft: 8, color: theme.colors.onSurfaceVariant }}>
+                    ETA: {eta}
+                  </Text>
+                </View>
+              )}
+              {distance && (
+                <View style={styles.updateItem}>
+                  <MaterialCommunityIcons name="map-marker-radius" size={16} color={theme.colors.tertiary} />
+                  <Text style={{ marginLeft: 8, color: theme.colors.onSurfaceVariant }}>
+                    Distance: {distance}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 
@@ -797,7 +746,7 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
                 <View style={styles.trackingInfo}>
                   {distance && (
                     <Chip mode="outlined" style={styles.infoChip}>
-                      <MaterialCommunityIcons name="map-marker-distance" size={16} />
+                      <MaterialCommunityIcons name="map-marker-radius" size={16} />
                       <Text style={{ marginLeft: 4 }}>{distance}</Text>
                     </Chip>
                   )}
@@ -822,69 +771,87 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
                   </Chip>
                 </View>
               </View>
-              <MapView
-                ref={mapRef}
-                style={styles.map}
-                provider={PROVIDER_DEFAULT}
-                initialRegion={mapRegion || {
-                  latitude: doc.runnerLocation?.latitude || 0,
-                  longitude: doc.runnerLocation?.longitude || 0,
-                  latitudeDelta: 0.05,
-                  longitudeDelta: 0.05,
-                }}
-                region={mapRegion || undefined}
-                showsUserLocation={true}
-                showsMyLocationButton={true}
-                showsCompass={true}
-                loadingEnabled={true}
-                minZoomLevel={12}
-              >
-                <Marker
-                  coordinate={{
+                            <RealTimeMap
+                height={300}
+                markers={[
+                  // Runner marker
+                  ...(doc.runnerLocation ? [{
+                    id: 'runner',
+                    coordinate: {
                     latitude: doc.runnerLocation.latitude,
                     longitude: doc.runnerLocation.longitude,
-                  }}
-                  title="Runner"
-                  pinColor={theme.colors.primary}
-                />
-                {doc.store?.latitude && doc.store?.longitude && (
-                  <Marker
-                    coordinate={{
+                    },
+                    title: 'Runner',
+                    description: 'Your delivery partner',
+                    type: 'runner' as const,
+                    data: {
+                      id: doc.runnerId,
+                      name: doc.runnerName,
+                      avatar: doc.runnerAvatar,
+                      rating: doc.runnerRating,
+                      phone: doc.runnerPhone,
+                    },
+                    onPress: () => {},
+                  }] : []),
+                  // Store marker
+                  ...(doc.store?.latitude && doc.store?.longitude ? [{
+                    id: 'store',
+                    coordinate: {
                       latitude: doc.store.latitude,
                       longitude: doc.store.longitude,
-                    }}
-                    title="Store"
-                    pinColor="#FF9800"
-                  />
-                )}
-                {doc.customer?.latitude && doc.customer?.longitude && (
-                  <Marker
-                    coordinate={{
+                    },
+                    title: doc.store.name || 'Store',
+                    description: 'Pickup location',
+                    type: 'store' as const,
+                    data: doc.store,
+                    onPress: () => {},
+                  }] : []),
+                  // Customer/Delivery marker
+                  ...(doc.customer?.latitude && doc.customer?.longitude ? [{
+                    id: 'delivery',
+                    coordinate: {
                       latitude: doc.customer.latitude,
                       longitude: doc.customer.longitude,
-                    }}
-                    title="Delivery"
-                    pinColor="#4CAF50"
-                  />
-                )}
-                {userLocation && (
-                  <Marker
-                    coordinate={{
-                      latitude: userLocation.latitude,
-                      longitude: userLocation.longitude,
-                    }}
-                    title="Your Location"
-                    pinColor="#007BFF"
-                  />
-                )}
-                {routeCoordinates.length > 0 && (
-                  <Polyline
-                    coordinates={routeCoordinates}
-                    strokeWidth={4}
-                    strokeColor={theme.colors.primary}
-                  />
-                )}
-              </MapView>
+                    },
+                    title: 'Delivery Location',
+                    description: 'Your address',
+                    type: 'delivery' as const,
+                    data: doc.customer,
+                    onPress: () => {},
+                  }] : []),
+                  // User location marker
+                  ...(userLocation ? [{
+                    id: 'user-location',
+                    coordinate: userLocation,
+                    title: 'Your Location',
+                    description: 'You are here',
+                    type: 'user' as const,
+                    data: null,
+                    onPress: () => {},
+                  }] : []),
+                ]}
+                routes={[
+                  // Route from store to delivery location
+                  ...(doc.store?.latitude && doc.store?.longitude && doc.customer?.latitude && doc.customer?.longitude ? [{
+                    origin: {
+                      latitude: doc.store.latitude,
+                      longitude: doc.store.longitude,
+                    },
+                    destination: {
+                      latitude: doc.customer.latitude,
+                      longitude: doc.customer.longitude,
+                    },
+                    points: [],
+                  }] : []),
+                ]}
+                realTimeUpdates={true}
+                updateInterval={10000}
+                onLocationUpdate={(location) => {
+                  if (userLocation?.latitude !== location.latitude || userLocation?.longitude !== location.longitude) {
+                    setUserLocation(location);
+                  }
+                }}
+              />
               
               {/* Real-time Status Updates */}
               {doc.lastLocationUpdate && (
@@ -965,18 +932,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  statusIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  statusIconLarge: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    marginBottom: 8,
+    marginRight: 16,
   },
-  statusLabel: {
-    fontSize: 12,
-    textAlign: 'center',
+  liveStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.02)',
+    borderRadius: 12,
+  },
+  statusInfo: {
+    flex: 1,
+  },
+  liveUpdatesContainer: {
+    gap: 12,
+  },
+  updateItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
   },
   orderDetails: {
     marginBottom: 16,
@@ -998,21 +979,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
   },
-  mapSection: {
-    marginTop: 20,
-  },
-  map: {
-    height: 250,
-    borderRadius: 12,
-  },
-  mapHeader: {
-    marginBottom: 12,
-  },
-  mapTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+
   trackingInfo: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1035,34 +1002,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
     borderRadius: 8,
   },
-  runnerMarker: {
-    backgroundColor: '#2196F3',
-    borderRadius: 20,
-    padding: 8,
-    borderWidth: 2,
-    borderColor: 'white',
-  },
-  storeMarker: {
-    backgroundColor: '#FF9800',
-    borderRadius: 16,
-    padding: 6,
-    borderWidth: 2,
-    borderColor: 'white',
-  },
-  deliveryMarker: {
-    backgroundColor: '#4CAF50',
-    borderRadius: 16,
-    padding: 6,
-    borderWidth: 2,
-    borderColor: 'white',
-  },
-  userMarker: {
-    backgroundColor: '#2196F3',
-    borderRadius: 16,
-    padding: 6,
-    borderWidth: 2,
-    borderColor: 'white',
-  },
+
   actionButtons: {
     marginTop: 24,
   },
@@ -1089,6 +1029,17 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 10,
     fontWeight: 'bold',
+  },
+  mapSection: {
+    marginBottom: 20,
+  },
+  mapHeader: {
+    marginBottom: 16,
+  },
+  mapTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 });
 

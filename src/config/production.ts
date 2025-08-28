@@ -10,7 +10,7 @@ export const PRODUCTION_CONFIG = {
   PAYSTACK_PUBLIC_KEY: process.env.PAYSTACK_PUBLIC_KEY || 'pk_live_your_production_paystack_public_key_here',
   
   // Google Maps API Key
-  GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY || 'your_google_maps_api_key_here',
+  GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyBchUZKKuN95XYo0M7q6KOsUEWJsA5KPLI',
   
   // Firebase Configuration
   FIREBASE_CONFIG: {

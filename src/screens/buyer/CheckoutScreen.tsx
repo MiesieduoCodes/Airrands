@@ -32,8 +32,7 @@ import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { validateField, ValidationRule } from '../../utils/validation';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-// @ts-ignore
-const PaystackWebView = require('react-native-paystack-webview');
+import PaystackWebView from 'react-native-paystack-webview';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import * as Location from 'expo-location';
 import ErrorBoundary from '../../components/ErrorBoundary';
@@ -43,7 +42,7 @@ import { sendOrderNotification } from '../../services/notificationService';
 import { getProfile } from '../../services/sellerServices';
 import Constants from 'expo-constants';
 import { PAYSTACK_PUBLIC_KEY } from '../../config/paystack';
-import ConfettiCannon from 'react-native-confetti-cannon';
+import Confetti from 'react-native-confetti';
 
 // Utility function for accurate distance calculation using Haversine formula
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -754,11 +753,11 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
         <ScrollView style={styles.successContainer}>
           {/* Confetti Animation */}
           {showConfetti && (
-            <ConfettiCannon
-              count={200}
-              origin={{ x: Dimensions.get('window').width / 2, y: 0 }}
-              fallSpeed={3000}
-              fadeOut={true}
+            <Confetti
+              count={500}
+              origin={{ x: Dimensions.get('window').width / 4, y: 0 }}
+              fallSpeed={6000}
+              fadeOut={false}
               autoStart={true}
               ref={confettiRef}
             />
@@ -1005,14 +1004,11 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 35,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 13,
-    paddingVertical: 12,
     elevation: 2,
   },
   headerTitle: {

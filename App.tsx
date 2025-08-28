@@ -63,7 +63,8 @@ const AppContent = () => {
     if (user) {
       registerForPushNotificationsAsync().then(token => {
         if (!token) {
-          setNotificationError('Notifications are disabled or not supported. Please enable them in your device settings.');
+          // Don't show error for Expo Go, just log it
+          console.log('Push notifications not available (likely using Expo Go)');
           return;
         }
         
@@ -79,17 +80,20 @@ const AppContent = () => {
             }).then(() => {
               // Token saved successfully
             }).catch((err: any) => {
-              setNotificationError('Failed to save notification settings. Please try again.');
+              console.error('Failed to save notification token:', err);
+              // Don't show error to user for token saving failures
             });
           }
         } catch (error) {
-          setNotificationError('Failed to save notification settings. Please try again.');
+          console.error('Failed to save notification settings:', error);
+          // Don't show error to user for token saving failures
         }
         
         // Clear success message after 3 seconds
         setTimeout(() => setNotificationSuccess(null), 3000);
       }).catch((error) => {
-        setNotificationError('Failed to register for notifications. Please try again later.');
+        console.error('Failed to register for notifications:', error);
+        // Don't show error to user for notification registration failures
       });
     }
   }, [user]);

@@ -30,25 +30,25 @@ const onboardingData: OnboardingItem[] = [
     id: '1',
     title: 'Errand Services',
     description: 'Get groceries, food, and more delivered to your door in minutes.',
-    image: require('../../../assets/Delivery-bro.png')
+    image: require('../../../assets/delivery_bro.png')
   },
   {
     id: '2',
     title: 'Real-Time Tracking',
     description: 'Track your orders live on the map with precise updates.',
-    image: require('../../../assets/Location tracking-cuate.png')
+    image: require('../../../assets/location_tracking_cuate.png')
   },
   {
     id: '3',
     title: 'Secure Payments',
     description: 'Pay safely with multiple payment options available.',
-    image: require('../../../assets/Price-cuate.png')
+    image: require('../../../assets/price_cuate.png')
   },
   {
     id: '4',
     title: 'Earn as Runner',
     description: 'Deliver and earn extra income on your own schedule.',
-    image: require('../../../assets/Successful purchase-cuate.png')
+    image: require('../../../assets/successful_purchase_cuate.png')
   },
 ];
 

@@ -119,8 +119,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string, rememberMe: boolean = true) => {
     setLoading(true);
     try {
-      await setRememberMe(rememberMe);
-      rememberMe ? await saveUserEmail(email) : await clearUserCredentials();
+      // Handle storage operations with error handling
+      try {
+        await setRememberMe(rememberMe);
+        rememberMe ? await saveUserEmail(email) : await clearUserCredentials();
+      } catch (storageError) {
+        console.error('Storage error during login (non-critical):', storageError);
+        // Continue with login even if storage fails
+      }
 
       await auth.setPersistence(
         rememberMe ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION
@@ -199,13 +205,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // --- Logout ---
   const logout = async () => {
     try {
-      await clearUserCredentials();
+      // Clear user credentials (don't fail if this fails)
+      try {
+        await clearUserCredentials();
+      } catch (storageError) {
+        console.error('Storage error during logout (non-critical):', storageError);
+        // Continue with logout even if storage fails
+      }
+      
+      // Sign out from Firebase
       await auth.signOut();
       setUser(null);
       setRole(null);
     } catch (error) {
       console.error('Logout error:', error);
-      throw error;
+      // Don't throw the error to prevent app crashes
+      // Still try to clear local state
+      setUser(null);
+      setRole(null);
     }
   };
 

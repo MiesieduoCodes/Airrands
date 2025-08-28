@@ -13,7 +13,10 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "config": {
+        "googleMapsApiKey": "AIzaSyBchUZKKuN95XYo0M7q6KOsUEWJsA5KPLI"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -22,9 +25,6 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.airrands.app",
-      "compileSdkVersion": 34,
-      "targetSdkVersion": 34,
-      "minSdkVersion": 21,
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_FINE_LOCATION",
@@ -38,7 +38,11 @@
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.RECORD_AUDIO"
       ],
-      "proguardFiles": ["proguard-android-optimize.txt", "proguard-rules.pro"]
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBchUZKKuN95XYo0M7q6KOsUEWJsA5KPLI"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -56,7 +60,7 @@
           "icon": "./assets/App-icon.png",
           "color": "#ffffff",
           "sounds": [
-            "./assets/notification-sound.wav"
+            "./assets/notification_sound.wav"
           ]
         }
       ],
@@ -72,10 +76,11 @@
       "FIREBASE_AUTH_DOMAIN": "airands-apk.firebaseapp.com",
       "FIREBASE_DATABASE_URL": "https://airands-apk-default-rtdb.europe-west1.firebasedatabase.app",
       "FIREBASE_PROJECT_ID": "airands-apk",
-      "FIREBASE_STORAGE_BUCKET": "airands-apk.firebasestorage.app",
+      "FIREBASE_STORAGE_BUCKET": "airrands-apk.firebasestorage.app",
       "FIREBASE_MESSAGING_SENDER_ID": "973554900024",
       "FIREBASE_APP_ID": "1:973554900024:web:0a2746c5599f45640f1acd",
       "FIREBASE_MEASUREMENT_ID": "G-QJCXMG81J8",
+      "GOOGLE_MAPS_API_KEY": "AIzaSyBchUZKKuN95XYo0M7q6KOsUEWJsA5KPLI",
       "eas": {
         "projectId": "a8e579fa-206b-43a5-bf8f-8c459e8bffdf"
       }

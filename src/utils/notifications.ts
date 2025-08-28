@@ -7,7 +7,14 @@ import Constants from 'expo-constants';
 export async function registerForPushNotificationsAsync(): Promise<string | undefined> {
   let token;
   
+  // Check if we're in Expo Go (which doesn't support push notifications in SDK 53+)
+  if (Constants.appOwnership === 'expo') {
+    console.warn('Push notifications are not supported in Expo Go. Use a development build instead.');
+    return undefined;
+  }
+  
   if (Device.isDevice) {
+    try {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
     
@@ -17,21 +24,27 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
       }
     
     if (finalStatus !== 'granted') {
-      return;
+        console.warn('Notification permissions not granted');
+        return undefined;
     }
     
     // Get project ID from app.json
     const projectId = Constants.expoConfig?.extra?.eas?.projectId;
     if (!projectId) {
       console.error('No project ID found in app.json');
-      return;
+        return undefined;
     }
     
     token = (await Notifications.getExpoPushTokenAsync({
       projectId: projectId,
     })).data;
     
-    } else {
+    } catch (error) {
+      console.error('Error getting push token:', error);
+      return undefined;
+    }
+  } else {
+    console.warn('Must use physical device for push notifications');
     }
 
   // Configure Android notification channels
