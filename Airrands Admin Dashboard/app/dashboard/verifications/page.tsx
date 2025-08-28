@@ -408,7 +408,7 @@ export default function VerificationsPage() {
                 <Textarea
                   id="reviewNotes"
                   value={reviewNotes}
-                  onChange={(e) => setReviewNotes(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReviewNotes(e.target.value)}
                   placeholder="Add review notes (optional)..."
                   className="mt-2"
                 />
