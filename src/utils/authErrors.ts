@@ -6,6 +6,7 @@ export const getAuthErrorMessage = (errorCode: string): string => {
     'auth/user-not-found': 'No account found with this email address. Please check your email or create a new account.',
     'auth/wrong-password': 'Incorrect password. Please check your password and try again.',
     'auth/invalid-email': 'Please enter a valid email address.',
+    'auth/invalid-login-credentials': 'Incorrect email or password. Please check your login details and try again.',
     
     // Account status
     'auth/user-disabled': 'This account has been disabled. Please contact support for assistance.',
@@ -15,10 +16,12 @@ export const getAuthErrorMessage = (errorCode: string): string => {
     'auth/too-many-requests': 'Too many failed login attempts. Please wait a few minutes before trying again.',
     
     // Network and server errors
-    'auth/network-request-failed': 'Network error. Please check your internet connection and try again.',
+    'auth/network-request-failed': 'Unable to connect to authentication servers. Please check your internet connection and try again.',
     'auth/internal-error': 'Something went wrong on our end. Please try again in a moment.',
     'auth/service-unavailable': 'Authentication service is temporarily unavailable. Please try again later.',
     'auth/timeout': 'Request timed out. Please check your connection and try again.',
+    'auth/network-error': 'Network error. Please check your internet connection and try again.',
+    'auth/connection-error': 'Connection error. Please check your internet connection and try again.',
     
     // Email verification
     'auth/email-not-verified': 'Please verify your email address before signing in.',
@@ -91,8 +94,13 @@ export const getAuthErrorMessage = (errorCode: string): string => {
 
 // Helper function to extract error code from Firebase error
 export const extractFirebaseErrorCode = (error: any): string => {
-  // Handle Firebase error objects
+  // Handle Firebase error objects (FirebaseError instances)
   if (error?.code) {
+    return error.code;
+  }
+  
+  // Handle FirebaseError constructor name
+  if (error?.constructor?.name === 'FirebaseError' && error?.code) {
     return error.code;
   }
   
@@ -102,6 +110,12 @@ export const extractFirebaseErrorCode = (error: any): string => {
     const codeMatch = error.message.match(/\(([^)]+)\)/);
     if (codeMatch && codeMatch[1]) {
       return codeMatch[1];
+    }
+    
+    // Also try to match auth/ codes directly in the message
+    const directCodeMatch = error.message.match(/auth\/[a-z-]+/);
+    if (directCodeMatch) {
+      return directCodeMatch[0];
     }
   }
   

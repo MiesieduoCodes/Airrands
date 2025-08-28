@@ -121,7 +121,7 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation 
       <View style={styles.content}>
         <Animatable.View animation="fadeInDown" duration={800}>
           <Image
-            source={require('../../../assets/Forgot password-cuate.png')}
+            source={require('../../../assets/forgot_password_cuate.png')}
             style={styles.image}
             resizeMode="contain"
           />

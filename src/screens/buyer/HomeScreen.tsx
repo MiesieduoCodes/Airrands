@@ -873,7 +873,7 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
     {/* Map Section */}
     <Animated.View style={[styles.mapContainer, { height: mapHeight }]}>
       <RealTimeMap
-        height={mapHeight as number}
+        height={height * 0.4}
                 markers={[
           // User location marker (buyer)
           ...(userLocation ? [{

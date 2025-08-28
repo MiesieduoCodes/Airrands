@@ -107,12 +107,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     
     if (!validateForm()) return;
 
+    setLoading(true);
     try {
       await login(formData.email, formData.password, rememberMe);
     } catch (error: any) {
       const userFriendlyMessage = getFirebaseAuthErrorMessage(error);
       setLoginError(userFriendlyMessage);
       setShowErrorSnackbar(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -124,7 +127,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       <View style={styles.content}>
         <Animated.View entering={FadeIn.delay(200).duration(800)}>
           <Image 
-        source={require('../../../assets/Login-cuate.png')}
+        source={require('../../../assets/login_cuate.png')}
         style={styles.image}
         resizeMode="contain"
       />

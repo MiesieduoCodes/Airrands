@@ -29,6 +29,7 @@ import * as Animatable from 'react-native-animatable';
 import { FadeInDown } from 'react-native-reanimated';
 import Animated from 'react-native-reanimated';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { getFirebaseAuthErrorMessage } from '../../utils/authErrors';
 
 const { width, height } = Dimensions.get('window');
 
@@ -108,17 +109,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
       await register(formData.email, formData.password, selectedRole);
       setEmailVerificationModalVisible(true);
     } catch (error: any) {
-      if (error.code === 'permission-denied') {
-        setRegisterError('You do not have permission to register.');
-      } else if (error.message && error.message.includes('timeout')) {
-        setRegisterError('Request timed out. Please try again.');
-      } else if (error.message && error.message.includes('network')) {
-        setRegisterError('Network error. Please check your connection.');
-      } else if (error.message) {
-        setRegisterError(error.message);
-      } else {
-        setRegisterError('An unexpected error occurred. Please try again.');
-      }
+      const userFriendlyMessage = getFirebaseAuthErrorMessage(error);
+      setRegisterError(userFriendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -185,7 +177,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
         <View style={styles.content}>
           <Animatable.View animation="fadeInDown" duration={800}>
             <Image
-              source={require('../../../assets/Sign up-cuate.png')}
+              source={require('../../../assets/sign_up_cuate.png')}
               style={styles.image}
               resizeMode="contain"
               accessibilityLabel="Sign up illustration"

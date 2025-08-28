@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { auth, db } from '../config/firebase';
 import firebase from 'firebase/compat/app';
 import { UserRole } from '../navigation/types';
@@ -10,7 +10,7 @@ import {
   clearUserCredentials,
 } from '../utils/storage';
 
-// --- User type ---
+// User type
 interface User {
   uid: string;
   email: string | null;
@@ -19,7 +19,7 @@ interface User {
   emailVerified: boolean;
 }
 
-// --- Context type ---
+// Context type
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
@@ -40,7 +40,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// --- Ensure user profile exists in Firestore ---
+// Ensure user profile exists in Firestore
 const ensureUserProfile = async (firebaseUser: firebase.User): Promise<string> => {
   try {
     const userRef = db.collection('users').doc(firebaseUser.uid);
@@ -70,13 +70,13 @@ const ensureUserProfile = async (firebaseUser: firebase.User): Promise<string> =
   }
 };
 
-// --- Provider ---
+// AuthProvider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // --- Initialize auth state ---
+  // Initialize auth state
   useEffect(() => {
     const initializeAuth = async () => {
       try {
@@ -84,48 +84,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await auth.setPersistence(
           rememberMe ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION
         );
-      } catch (err) {
-        console.error('Failed to initialize persistence:', err);
-        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      } catch (error) {
+        console.error('Failed to initialize persistence:', error);
+        try {
+          await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        } catch (fallbackError) {
+          console.error('Failed to set fallback persistence:', fallbackError);
+        }
       }
     };
 
     initializeAuth();
 
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-      if (firebaseUser) {
-        const userData: User = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-          emailVerified: firebaseUser.emailVerified,
-        };
-        setUser(userData);
+      try {
+        if (firebaseUser) {
+          const userData: User = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            emailVerified: firebaseUser.emailVerified,
+          };
+          setUser(userData);
 
-        const userRole = await ensureUserProfile(firebaseUser);
-        setRole(userRole as UserRole);
-      } else {
+          const userRole = await ensureUserProfile(firebaseUser);
+          setRole(userRole as UserRole);
+        } else {
+          setUser(null);
+          setRole(null);
+        }
+      } catch (error) {
+        console.error('Error in auth state change:', error);
         setUser(null);
         setRole(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return unsubscribe;
   }, []);
 
-  // --- Login ---
-  const login = async (email: string, password: string, rememberMe: boolean = true) => {
+  // Login function
+  const login = useCallback(async (email: string, password: string, rememberMe: boolean = true) => {
     setLoading(true);
     try {
       // Handle storage operations with error handling
       try {
         await setRememberMe(rememberMe);
-        rememberMe ? await saveUserEmail(email) : await clearUserCredentials();
+        if (rememberMe) {
+          await saveUserEmail(email);
+        } else {
+          await clearUserCredentials();
+        }
       } catch (storageError) {
         console.error('Storage error during login (non-critical):', storageError);
-        // Continue with login even if storage fails
       }
 
       await auth.setPersistence(
@@ -154,13 +168,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // --- Register ---
-  const register = async (email: string, password: string, role: 'buyer' | 'seller' | 'runner') => {
+  // Register function
+  const register = useCallback(async (email: string, password: string, role: 'buyer' | 'seller' | 'runner') => {
     try {
       const cred = await auth.createUserWithEmailAndPassword(email, password);
-      if (!cred.user) throw new Error('User creation failed');
+      if (!cred.user) {
+        throw new Error('User creation failed');
+      }
 
       const userDataToSave = {
         uid: cred.user.uid,
@@ -200,17 +216,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Registration error:', error);
       throw error;
     }
-  };
+  }, []);
 
-  // --- Logout ---
-  const logout = async () => {
+  // Logout function
+  const logout = useCallback(async () => {
     try {
       // Clear user credentials (don't fail if this fails)
       try {
         await clearUserCredentials();
       } catch (storageError) {
         console.error('Storage error during logout (non-critical):', storageError);
-        // Continue with logout even if storage fails
       }
       
       // Sign out from Firebase
@@ -224,26 +239,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setRole(null);
     }
-  };
+  }, []);
 
-  // --- Email Verification ---
-  const sendVerificationEmail = async () => {
-    if (!auth.currentUser || auth.currentUser.emailVerified) return;
+  // Email verification functions
+  const sendVerificationEmail = useCallback(async () => {
     try {
-      const actionCodeSettings = { url: 'https://airrands.com/verify-email', handleCodeInApp: false };
-      await auth.currentUser.sendEmailVerification(actionCodeSettings);
-    } catch {
-      await auth.currentUser?.sendEmailVerification();
+      if (!auth.currentUser || auth.currentUser.emailVerified) return;
+      
+      const actionCodeSettings = { 
+        url: 'https://airrands.com/verify-email', 
+        handleCodeInApp: false 
+      };
+      
+      try {
+        await auth.currentUser.sendEmailVerification(actionCodeSettings);
+      } catch {
+        await auth.currentUser.sendEmailVerification();
+      }
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+      throw error;
     }
-  };
+  }, []);
 
-  const resendVerificationEmail = async () => sendVerificationEmail();
+  const resendVerificationEmail = useCallback(() => sendVerificationEmail(), [sendVerificationEmail]);
 
-  // --- Delete Account ---
-  const deleteUserAccount = async () => {
+  // Delete account function
+  const deleteUserAccount = useCallback(async () => {
     try {
       const currentUser = auth.currentUser;
-      if (!currentUser) throw new Error('No user signed in');
+      if (!currentUser) {
+        throw new Error('No user signed in');
+      }
 
       const uid = currentUser.uid;
       const batch = db.batch();
@@ -263,10 +290,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error deleting user account:', error);
       throw error;
     }
-  };
+  }, []);
 
-  // --- Helpers ---
-  const checkEmailAvailability = async (email: string): Promise<boolean> => {
+  // Helper functions
+  const checkEmailAvailability = useCallback(async (email: string): Promise<boolean> => {
     try {
       const methods = await auth.fetchSignInMethodsForEmail(email);
       return methods.length === 0;
@@ -274,11 +301,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error checking email availability:', error);
       return false;
     }
-  };
+  }, []);
 
-  const checkAndReloadEmailVerification = async (): Promise<boolean> => {
+  const checkAndReloadEmailVerification = useCallback(async (): Promise<boolean> => {
     try {
       if (!auth.currentUser) return false;
+      
       await auth.currentUser.reload();
       const userData: User = {
         uid: auth.currentUser.uid,
@@ -293,27 +321,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error checking email verification:', error);
       return false;
     }
-  };
+  }, []);
 
-  const reloadUser = async () => {
-    if (auth.currentUser) {
-      const userData: User = {
-        uid: auth.currentUser.uid,
-        email: auth.currentUser.email,
-        displayName: auth.currentUser.displayName,
-        photoURL: auth.currentUser.photoURL,
-        emailVerified: auth.currentUser.emailVerified,
-      };
-      setUser(userData);
-      const userRole = await ensureUserProfile(auth.currentUser);
-      setRole(userRole as UserRole);
+  const reloadUser = useCallback(async () => {
+    try {
+      if (auth.currentUser) {
+        const userData: User = {
+          uid: auth.currentUser.uid,
+          email: auth.currentUser.email,
+          displayName: auth.currentUser.displayName,
+          photoURL: auth.currentUser.photoURL,
+          emailVerified: auth.currentUser.emailVerified,
+        };
+        setUser(userData);
+        const userRole = await ensureUserProfile(auth.currentUser);
+        setRole(userRole as UserRole);
+      }
+    } catch (error) {
+      console.error('Error reloading user:', error);
     }
-  };
+  }, []);
 
-  const getStoredEmail = async (): Promise<string | null> => getUserEmail();
-  const getRememberMePreference = async (): Promise<boolean> => getRememberMe();
+  const getStoredEmail = useCallback(async (): Promise<string | null> => {
+    try {
+      return await getUserEmail();
+    } catch (error) {
+      console.error('Error getting stored email:', error);
+      return null;
+    }
+  }, []);
 
-  // --- Context Value ---
+  const getRememberMePreference = useCallback(async (): Promise<boolean> => {
+    try {
+      return await getRememberMe();
+    } catch (error) {
+      console.error('Error getting remember me preference:', error);
+      return true;
+    }
+  }, []);
+
+  // Context value
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
@@ -335,9 +382,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// --- Hook ---
+// Hook
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
   return context;
 };

@@ -70,16 +70,16 @@ const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({ route, naviga
   const { theme } = useTheme();
 
   // Helper functions for status display
-  const getStatusIcon = (status: string): string => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'check-circle-outline';
-      case 'available': return 'package-variant';
-      case 'assigned': return 'account-check-outline';
-      case 'picked_up': return 'package-variant';
-      case 'out_for_delivery': return 'bike';
-      case 'delivered': return 'check-circle';
-      case 'completed': return 'check-circle';
-      default: return 'package-variant';
+      case 'confirmed': return 'check-circle-outline' as const;
+      case 'available': return 'package-variant' as const;
+      case 'assigned': return 'account-check-outline' as const;
+      case 'picked_up': return 'package-variant' as const;
+      case 'out_for_delivery': return 'bike' as const;
+      case 'delivered': return 'check-circle' as const;
+      case 'completed': return 'check-circle' as const;
+      default: return 'package-variant' as const;
     }
   };
 

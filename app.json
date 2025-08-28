@@ -73,9 +73,9 @@
     ],
     "extra": {
       "FIREBASE_API_KEY": "AIzaSyC8y7Nv-8355IEu7RhrWuhsyucZh6YyNc8",
-      "FIREBASE_AUTH_DOMAIN": "airands-apk.firebaseapp.com",
-      "FIREBASE_DATABASE_URL": "https://airands-apk-default-rtdb.europe-west1.firebasedatabase.app",
-      "FIREBASE_PROJECT_ID": "airands-apk",
+      "FIREBASE_AUTH_DOMAIN": "airrands-apk.firebaseapp.com",
+      "FIREBASE_DATABASE_URL": "https://airrands-apk-default-rtdb.europe-west1.firebasedatabase.app",
+      "FIREBASE_PROJECT_ID": "airrands-apk",
       "FIREBASE_STORAGE_BUCKET": "airrands-apk.firebasestorage.app",
       "FIREBASE_MESSAGING_SENDER_ID": "973554900024",
       "FIREBASE_APP_ID": "1:973554900024:web:0a2746c5599f45640f1acd",

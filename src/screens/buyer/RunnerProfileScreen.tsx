@@ -466,7 +466,7 @@ const RunnerProfileScreen: React.FC<RunnerProfileScreenProps> = ({ navigation, r
         <PaystackWebView
           paystackKey={PAYSTACK_PUBLIC_KEY}
           amount={Number(pendingErrand.budget)}
-          billingEmail={user.email}
+          billingEmail={user.email || ''}
           billingName={user.displayName || 'User'}
           activityIndicatorColor="#000"
           onSuccess={handlePaystackSuccess}
