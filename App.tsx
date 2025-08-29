@@ -19,6 +19,7 @@ import { NotificationService, sendPushNotification } from './src/services/notifi
 import { RunnerAvailabilityProvider } from './src/contexts/RunnerAvailabilityContext';
 import { NotificationProvider } from './src/contexts/NotificationContext';
 import ErrorBoundary from './src/components/ErrorBoundary';
+import { setNavigationRef, setupNotificationNavigation } from './src/utils/notificationNavigation';
 
 // Enhanced notification handler for background notifications
 Notifications.setNotificationHandler({
@@ -153,12 +154,18 @@ const AppContent = () => {
       setTimeout(() => setNotificationSuccess(null), 2000);
     });
 
+    // Set up notification navigation
+    const navigationSubscription = setupNotificationNavigation();
+
     return () => {
       if (notificationListener.current) {
         Notifications.removeNotificationSubscription(notificationListener.current);
       }
       if (responseListener.current) {
         Notifications.removeNotificationSubscription(responseListener.current);
+      }
+      if (navigationSubscription) {
+        Notifications.removeNotificationSubscription(navigationSubscription);
       }
     };
   }, []);
@@ -225,7 +232,7 @@ const AppContent = () => {
       </Snackbar>
       
       <PaperProvider theme={theme}>
-        <NavigationContainer>
+        <NavigationContainer ref={setNavigationRef}>
           <StatusBar style={isDarkMode ? 'light' : 'dark'} />
           <RootNavigator />
         </NavigationContainer>

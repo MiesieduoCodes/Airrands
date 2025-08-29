@@ -703,6 +703,27 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           
           <TouchableOpacity 
             style={styles.menuItem}
+            onPress={() => navigateToScreen('SupportMessage')}
+          >
+            <MaterialCommunityIcons 
+              name="headset" 
+              size={20} 
+              color={theme.colors.onSurfaceVariant} 
+            />
+            <Text style={[styles.menuText, { color: theme.colors.onSurface }]}>
+              Contact Support
+            </Text>
+            <MaterialIcons 
+              name="chevron-right" 
+              size={24} 
+              color={theme.colors.onSurfaceVariant} 
+            />
+          </TouchableOpacity>
+          
+          <Divider style={styles.divider} />
+          
+          <TouchableOpacity 
+            style={styles.menuItem}
             onPress={() => navigateToScreen('Feedback')}
           >
             <MaterialCommunityIcons 

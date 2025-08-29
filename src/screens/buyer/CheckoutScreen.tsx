@@ -44,18 +44,8 @@ import Constants from 'expo-constants';
 import { PAYSTACK_PUBLIC_KEY } from '../../config/paystack';
 import Confetti from 'react-native-confetti';
 
-// Utility function for accurate distance calculation using Haversine formula
-const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-  const R = 6371; // Earth's radius in kilometers
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c; // Distance in kilometers
-};
+// Import enhanced distance calculation functions
+import { haversineDistance, isValidCoordinate } from '../../utils/distance';
 
 // Configuration for runner selection
 const RUNNER_SELECTION_CONFIG = {
@@ -172,8 +162,13 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
         const currentTime = Date.now();
         
         const nearbyRunners = allRunners.filter((runner: any) => {
-          // Calculate accurate distance using Haversine formula
-          const distance = calculateDistance(
+          // Validate runner coordinates
+          if (!isValidCoordinate(runner.latitude, runner.longitude)) {
+            return false;
+          }
+          
+          // Calculate accurate distance using enhanced Haversine formula
+          const distance = haversineDistance(
             location.coords.latitude,
             location.coords.longitude,
             runner.latitude,
@@ -201,13 +196,13 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
         
         // Sort runners by distance (closest first) and rating
         nearbyRunners.sort((a: any, b: any) => {
-          const distanceA = calculateDistance(
+          const distanceA = haversineDistance(
             location.coords.latitude,
             location.coords.longitude,
             a.latitude,
             a.longitude
           );
-          const distanceB = calculateDistance(
+          const distanceB = haversineDistance(
             location.coords.latitude,
             location.coords.longitude,
             b.latitude,
@@ -407,7 +402,7 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
       const currentTime = Date.now();
       
       const nearbyRunners = allRunners.filter((runner: any) => {
-        const distance = calculateDistance(
+        const distance = haversineDistance(
           buyerLocation.latitude,
           buyerLocation.longitude,
           runner.latitude,
@@ -425,13 +420,13 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation, route }: Ch
       });
       
       nearbyRunners.sort((a: any, b: any) => {
-        const distanceA = calculateDistance(
+        const distanceA = haversineDistance(
           buyerLocation.latitude,
           buyerLocation.longitude,
           a.latitude,
           a.longitude
         );
-        const distanceB = calculateDistance(
+        const distanceB = haversineDistance(
           buyerLocation.latitude,
           buyerLocation.longitude,
           b.latitude,

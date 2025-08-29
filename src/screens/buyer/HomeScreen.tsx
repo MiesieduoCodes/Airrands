@@ -36,7 +36,7 @@ import { db } from '../../config/firebase'; // adjust path as needed
 import { sendPushNotification } from '../../services/notificationService'; // adjust path if needed
 import { useNotification } from '../../contexts/NotificationContext';
 import { DocumentReference } from 'firebase/firestore';
-import { haversineDistance, formatDistance, calculateAndFormatDistance, isValidCoordinate } from '../../utils/distance';
+import { haversineDistance, formatDistance, calculateAndFormatDistance, isValidCoordinate, calculateDistanceAndPrice } from '../../utils/distance';
 import { addSampleData, checkDataExists } from '../../utils/sampleData';
 // @ts-ignore
 import PaystackWebView from 'react-native-paystack-webview';
@@ -126,6 +126,8 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
   const [showPaystack, setShowPaystack] = useState(false);
   const [pendingErrand, setPendingErrand] = useState<any>(null);
   const [paystackTxnRef, setPaystackTxnRef] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [createdErrandId, setCreatedErrandId] = useState<string | null>(null);
 
 
   const categories = [
@@ -590,23 +592,28 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
       return;
     }
 
-    // Get pickup and dropoff coordinates
-    // Use the coordinates from errandData if provided, otherwise use default values
-    const pickupLat = errandData.pickupLatitude || 6.5244; // Default to Lagos coordinates
-    const pickupLng = errandData.pickupLongitude || 3.3792;
-    const dropoffLat = errandData.dropoffLatitude || 6.5244; // Default to Lagos coordinates
-    const dropoffLng = errandData.dropoffLongitude || 3.3792;
+    // Get pickup and dropoff coordinates from errandData
+    const pickupLat = errandData.pickupLatitude;
+    const pickupLng = errandData.pickupLongitude;
+    const dropoffLat = errandData.dropoffLatitude;
+    const dropoffLng = errandData.dropoffLongitude;
 
-    if (pickupLat == null || pickupLng == null || dropoffLat == null || dropoffLng == null) {
-      Alert.alert('Error', 'Pickup and dropoff locations must have coordinates.');
+    if (!pickupLat || !pickupLng || !dropoffLat || !dropoffLng) {
+      Alert.alert('Error', 'Pickup and dropoff locations must have valid coordinates.');
       return;
     }
 
-    // Calculate distance in km
+    // Calculate distance using haversine formula
     const distance = haversineDistance(pickupLat, pickupLng, dropoffLat, dropoffLng);
-    // Calculate fee: 1km = ₦1000
-    const fee = Math.round(distance * 1000);
+    const fee = Math.round(distance * 1000); // ₦1000 per km
+    const isValid = distance > 0 && distance <= 50; // Max 50km for errands
 
+    if (!isValid) {
+      Alert.alert('Error', 'Distance is too far (max 50km). Please choose closer locations.');
+      return;
+    }
+
+    // Prepare errand data for payment
     const fullErrandData: FullErrandData = {
       ...errandData,
       runnerId: selectedRunner.id,
@@ -615,199 +622,134 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
       buyerId: user.uid,
       buyerName: user.displayName,
       buyerEmail: user.email,
-      status: 'available',
+      status: 'pending_payment',
       createdAt: new Date().toISOString(),
       distance: distance.toFixed(2) + ' km',
       fee,
     };
 
-    let errandDocRef = await db.collection('errands').add(fullErrandData) as unknown as DocumentReference;
-    if (!errandDocRef) return;
+    // Store pending errand and trigger payment
+    setPendingErrand(fullErrandData);
+    setPaystackTxnRef(`errand_${Date.now()}_${user.uid}`);
     setErrandModalVisible(false);
-    Alert.alert('Success', 'Your errand request has been sent!', [
-        {
-          text: 'Track Errand', 
-          onPress: () => navigation.navigate('OrderTracking', {
-            jobType: 'errand',
-            jobId: errandDocRef.id,
-            orderNumber: errandDocRef.id,
-          })
-        }
-      ]
-    );
-
-    // Notification logic (separate try/catch)
-    try {
-      // Fetch runner's push token
-      const runnerDoc = await db.collection('users').doc(selectedRunner.id).get();
-      const runnerData = runnerDoc.data();
-      const runnerPushToken = runnerData?.expoPushToken;
-
-      // Fetch buyer's push token
-      const buyerDoc = await db.collection('users').doc(user.uid).get();
-      const buyerData = buyerDoc.data();
-      const buyerPushToken = buyerData?.expoPushToken;
-
-      // Fetch seller's push token if sellerId is present
-      let sellerPushToken = null;
-      if (fullErrandData.sellerId) {
-        const sellerDoc = await db.collection('users').doc(fullErrandData.sellerId).get();
-        const sellerData = sellerDoc.data();
-        sellerPushToken = sellerData?.expoPushToken;
-      }
-
-      // Custom notification messages
-      const runnerMessage = `${user.displayName || 'A buyer'} requested: "${fullErrandData.title}" at ${fullErrandData.location}.`;
-      const buyerMessage = `Your request "${fullErrandData.title}" to ${selectedRunner.name} was sent!`;
-      const sellerMessage = `${user.displayName || 'A buyer'} requested: "${fullErrandData.title}". Check your orders.`;
-
-      // Send push notifications
-      if (runnerPushToken) {
-        await sendPushNotification(
-          runnerPushToken,
-          'New Errand Request',
-          runnerMessage
-        );
-      }
-      if (buyerPushToken) {
-        await sendPushNotification(
-          buyerPushToken,
-          'Errand Request Sent',
-          buyerMessage
-        );
-      }
-      if (fullErrandData.sellerId && sellerPushToken) {
-        await sendPushNotification(
-          sellerPushToken,
-          'New Order/Errand',
-          sellerMessage
-        );
-      }
-
-      // Save in-app notifications to Firestore
-      const notificationObj = (title: string, message: string, type: string) => ({
-        title,
-        message,
-        type,
-        isRead: false,
-        createdAt: new Date().toISOString(),
-        errandId: errandDocRef.id,
-      });
-      // Runner in-app notification
-      await db.collection('users').doc(selectedRunner.id)
-        .collection('notifications').add(notificationObj('New Errand Request', runnerMessage, 'errand'));
-      // Buyer in-app notification
-      await db.collection('users').doc(user.uid)
-        .collection('notifications').add(notificationObj('Errand Request Sent', buyerMessage, 'errand'));
-      // Seller in-app notification
-      if (fullErrandData.sellerId) {
-        await db.collection('users').doc(fullErrandData.sellerId)
-          .collection('notifications').add(notificationObj('New Order/Errand', sellerMessage, 'order'));
-      }
-    } catch (notificationError) {
-      // Only show a warning, not a full error
-      Alert.alert('Warning', 'Errand sent, but notifications may not have been delivered.');
-      console.error('Notification error:', notificationError);
-    }
-  };
-
-  // Payment handling for errand requests
-  const handlePaymentRequired = (errandData: any, amount: number) => {
-    // Generate unique transaction reference
-    const ref = `errand_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    setPaystackTxnRef(ref);
-    setPendingErrand(errandData);
     setShowPaystack(true);
   };
 
-  const handlePaystackSuccess = async (response: any) => {
-    setShowPaystack(false);
-    
-    if (!pendingErrand || !selectedRunner || !user) {
-      Alert.alert('Error', 'Payment successful but errand data is missing.');
-      return;
-    }
-
+  // Handle successful payment
+  const handlePaymentSuccess = async (response: any) => {
     try {
-      // Create the errand with payment confirmation
-      const pickupLat = pendingErrand.pickupLatitude || 6.5244;
-      const pickupLng = pendingErrand.pickupLongitude || 3.3792;
-      const dropoffLat = pendingErrand.dropoffLatitude || 6.5244;
-      const dropoffLng = pendingErrand.dropoffLongitude || 3.3792;
+      if (!pendingErrand) return;
 
-      const distance = haversineDistance(pickupLat, pickupLng, dropoffLat, dropoffLng);
-      const fee = Math.round(distance * 1000);
-
-      const fullErrandData: FullErrandData = {
+      // Create the errand in the database
+      const errandData = {
         ...pendingErrand,
-        runnerId: selectedRunner.id,
-        runnerName: selectedRunner.name,
-        runnerImage: selectedRunner.image,
-        buyerId: user.uid,
-        buyerName: user.displayName,
-        buyerEmail: user.email,
         status: 'available',
-        createdAt: new Date().toISOString(),
-        distance: distance.toFixed(2) + ' km',
-        fee,
         paymentStatus: 'paid',
-        paymentReference: paystackTxnRef,
-        paystackData: response.data,
+        paymentReference: response.reference,
+        paymentAmount: pendingErrand.fee,
+        paidAt: new Date().toISOString(),
       };
 
-      const errandDocRef = await db.collection('errands').add(fullErrandData) as unknown as DocumentReference;
-      
-      setErrandModalVisible(false);
-      setPendingErrand(null);
-      
-      Alert.alert('Success', 'Your errand request has been submitted and paid for!', [
-        {
-          text: 'Track Errand', 
-          onPress: () => navigation.navigate('OrderTracking', {
-            jobType: 'errand',
-            jobId: errandDocRef.id,
-            orderNumber: errandDocRef.id,
-          })
-        }
-      ]);
+      const errandDocRef = await db.collection('errands').add(errandData);
+      setCreatedErrandId(errandDocRef.id);
 
-      // Send notifications (same logic as before)
+      // Send notification to runner
       try {
-        const runnerDoc = await db.collection('users').doc(selectedRunner.id).get();
+        const runnerDoc = await db.collection('users').doc(pendingErrand.runnerId).get();
         const runnerData = runnerDoc.data();
         const runnerPushToken = runnerData?.expoPushToken;
 
-        const buyerDoc = await db.collection('users').doc(user.uid).get();
+        // Fetch buyer's push token
+        const buyerDoc = await db.collection('users').doc(user?.uid).get();
         const buyerData = buyerDoc.data();
         const buyerPushToken = buyerData?.expoPushToken;
 
         if (runnerPushToken) {
           await sendPushNotification(
             runnerPushToken,
-            'New Errand Request',
-            `${user.displayName || 'A buyer'} requested: "${fullErrandData.title}" at ${fullErrandData.location}.`
+            'New Errand Request!',
+            `You have a new errand request from ${pendingErrand.buyerName}. Tap to view details.`,
+            {
+              type: 'errand_request',
+              errandId: errandDocRef.id,
+              buyerId: pendingErrand.buyerId,
+              buyerName: pendingErrand.buyerName,
+            }
           );
         }
-        if (buyerPushToken) {
-          await sendPushNotification(
-            buyerPushToken,
-            'Errand Request Sent',
-            `Your request "${fullErrandData.title}" to ${selectedRunner.name} was sent!`
-          );
-        }
-      } catch (error) {
-        console.error('Error sending notifications:', error);
+
+        // Create notification for runner in database
+        await db.collection('notifications').add({
+          userId: pendingErrand.runnerId,
+          type: 'errand_request',
+          title: 'New Errand Request',
+          message: `You have a new errand request from ${pendingErrand.buyerName}`,
+          data: {
+            errandId: errandDocRef.id,
+            buyerId: pendingErrand.buyerId,
+            buyerName: pendingErrand.buyerName,
+          },
+          read: false,
+          createdAt: new Date().toISOString(),
+        });
+
+        // Create notification for buyer
+        await db.collection('notifications').add({
+          userId: pendingErrand.buyerId,
+          type: 'errand_created',
+          title: 'Errand Request Sent',
+          message: 'Your errand request has been sent to the runner. You will be notified when they accept.',
+          data: {
+            errandId: errandDocRef.id,
+            runnerId: pendingErrand.runnerId,
+            runnerName: pendingErrand.runnerName,
+          },
+          read: false,
+          createdAt: new Date().toISOString(),
+        });
+
+      } catch (notificationError) {
+        console.error('Error sending notifications:', notificationError);
       }
+
+      // Show success modal
+      setShowPaystack(false);
+      setShowSuccessModal(true);
+      setPendingErrand(null);
+
     } catch (error) {
-      Alert.alert('Error', 'Payment successful but failed to create errand. Please contact support.');
-      console.error('Error creating errand after payment:', error);
+      console.error('Error creating errand:', error);
+      Alert.alert('Error', 'Failed to create errand. Please try again.');
+      setShowPaystack(false);
     }
   };
 
-  const handlePaystackCancel = () => {
+  // Handle payment failure
+  const handlePaymentFailure = () => {
+    console.error('Payment cancelled or failed');
+    Alert.alert('Payment Cancelled', 'Your payment was cancelled. Please try again.');
     setShowPaystack(false);
     setPendingErrand(null);
-    Alert.alert('Payment Cancelled', 'Your errand request was not submitted.');
+  };
+
+  // Handle payment required (for ErrandRequestModal)
+  const handlePaymentRequired = (errandData: any, amount: number) => {
+    // This function is called by ErrandRequestModal when payment is required
+    // We already handle payment in handleErrandSubmit, so this is just a placeholder
+    console.log('Payment required for errand:', errandData, 'Amount:', amount);
+  };
+
+  // Handle success modal actions
+  const handleSuccessModalAction = (action: 'track' | 'close') => {
+    setShowSuccessModal(false);
+    if (action === 'track' && createdErrandId) {
+      navigation.navigate('OrderTracking', {
+        jobType: 'errand',
+        jobId: createdErrandId,
+        orderNumber: createdErrandId,
+      });
+    }
+    setCreatedErrandId(null);
   };
 
   const handleStorePress = (store: Store) => {
@@ -1190,7 +1132,7 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
                           ]}
                         >
                           <MaterialCommunityIcons 
-                            name="check" 
+                            name="run-fast" 
                             size={20} 
                             color={theme.colors.onPrimary} 
                           />
@@ -1246,22 +1188,58 @@ const BuyerHomeScreen: React.FC<{ navigation: BuyerNavigationProp }> = ({ naviga
       />
 
       {/* PayStack Payment for Errand Requests */}
-{showPaystack && pendingErrand && (
-  <PaystackWebView
-    paystackKey={PAYSTACK_PUBLIC_KEY}
-    amount={Number(pendingErrand.budget) * 100} // Convert to kobo
-    billingEmail={user?.email || ''}
-    billingName={user?.displayName || 'User'}
-    activityIndicatorColor={theme.colors.primary}
-    onSuccess={handlePaystackSuccess}
-    onCancel={handlePaystackCancel}
-    reference={paystackTxnRef}
-    autoStart={true}
-    channels={["card", "bank", "ussd"]}
-    currency="NGN"
-    description={`Payment for errand: ${pendingErrand.title}`}
-  />
-)}
+      {showPaystack && pendingErrand && (
+        <PaystackWebView
+          paystackKey={PAYSTACK_PUBLIC_KEY}
+          amount={pendingErrand.fee * 100} // Convert to kobo
+          billingEmail={user?.email || ''}
+          billingName={user?.displayName || 'User'}
+          activityIndicatorColor={theme.colors.primary}
+          onSuccess={handlePaymentSuccess}
+          onCancel={() => handlePaymentFailure()}
+          reference={paystackTxnRef}
+          autoStart={true}
+          channels={["card", "bank", "ussd"]}
+          currency="NGN"
+          description={`Payment for errand: ${pendingErrand.title || 'Errand Request'}`}
+        />
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <View style={styles.modalOverlay}>
+          <View style={[styles.successModal, { backgroundColor: theme.colors.surface }]}>
+            <MaterialCommunityIcons 
+              name="check-circle" 
+              size={80} 
+              color={theme.colors.primary} 
+              style={styles.successIcon}
+            />
+            <Text style={[styles.successTitle, { color: theme.colors.onSurface }]}>
+              Errand Request Sent!
+            </Text>
+            <Text style={[styles.successMessage, { color: theme.colors.onSurfaceVariant }]}>
+              Your errand request has been sent to the runner. You will be notified when they accept.
+            </Text>
+            <View style={styles.successButtons}>
+              <Button
+                mode="outlined"
+                onPress={() => handleSuccessModalAction('close')}
+                style={styles.successButton}
+              >
+                Close
+              </Button>
+              <Button
+                mode="contained"
+                onPress={() => handleSuccessModalAction('track')}
+                style={styles.successButton}
+              >
+                Track Errand
+              </Button>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -1566,6 +1544,54 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
+  },
+  // Success modal styles
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  successModal: {
+    margin: 20,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    maxWidth: 320,
+    width: '90%',
+  },
+  successIcon: {
+    marginBottom: 16,
+  },
+  successTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  successMessage: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  successButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  successButton: {
+    flex: 1,
   },
 });
 

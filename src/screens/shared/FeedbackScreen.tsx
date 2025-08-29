@@ -18,6 +18,31 @@ import { useTheme } from '../../contexts/ThemeContext';
 import * as Animatable from 'react-native-animatable';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
+// Function to determine user role
+const getUserRole = async (userId: string): Promise<'buyer' | 'seller' | 'runner'> => {
+  try {
+    const { db } = await import('../../config/firebase');
+    
+    // Check if user is a runner
+    const runnerDoc = await db.collection('runners').doc(userId).get();
+    if (runnerDoc.exists) {
+      return 'runner';
+    }
+    
+    // Check if user is a seller
+    const sellerDoc = await db.collection('sellers').doc(userId).get();
+    if (sellerDoc.exists) {
+      return 'seller';
+    }
+    
+    // Default to buyer
+    return 'buyer';
+  } catch (error) {
+    console.error('Error determining user role:', error);
+    return 'buyer'; // Default fallback
+  }
+};
+
 const FeedbackScreen = () => {
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState('');
@@ -39,10 +64,36 @@ const FeedbackScreen = () => {
     }
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { db } = await import('../../config/firebase');
+      const { useAuth } = await import('../../contexts/AuthContext');
+      
+      // Get current user
+      const auth = await import('firebase/auth');
+      const currentUser = auth.getAuth().currentUser;
+      
+      if (!currentUser) {
+        setError('You must be logged in to submit feedback');
+        return;
+      }
+
+      // Determine user role
+      const userRole = await getUserRole(currentUser.uid);
+      
+      // Save feedback to Firebase
+      await db.collection('userFeedback').add({
+        userId: currentUser.uid,
+        userName: currentUser.displayName || currentUser.email,
+        userEmail: currentUser.email,
+        userRole: userRole,
+        rating: rating,
+        feedback: feedback.trim(),
+        timestamp: new Date(),
+        status: 'new'
+      });
+
       setIsSubmitted(true);
     } catch (err) {
+      console.error('Error submitting feedback:', err);
       setError('Failed to submit feedback. Please try again.');
     }
   };

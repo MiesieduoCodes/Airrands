@@ -12,6 +12,15 @@ export const PRODUCTION_CONFIG = {
   // Google Maps API Key
   GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyBchUZKKuN95XYo0M7q6KOsUEWJsA5KPLI',
   
+  // App Location Settings (Yenagoa, Bayelsa)
+  APP_LOCATION: {
+    DEFAULT_LATITUDE: 4.9247, // Yenagoa latitude
+    DEFAULT_LONGITUDE: 6.2642, // Yenagoa longitude
+    STATE: 'Bayelsa',
+    CITY: 'Yenagoa',
+    COUNTRY: 'Nigeria'
+  },
+  
   // Firebase Configuration
   FIREBASE_CONFIG: {
     apiKey: "AIzaSyC8y7Nv-8355IEu7RhrWuhsyucZh6YyNc8",

@@ -4,7 +4,8 @@ import { Text, TextInput, IconButton, Avatar, Divider } from 'react-native-paper
 import { RouteProp } from '@react-navigation/native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { sendMessage as sendChatMessage, getMessages, markMessagesAsRead, subscribeToUserOnlineStatus } from '../../services/chatService';
+import { getMessages, markMessagesAsRead, subscribeToUserOnlineStatus } from '../../services/chatService';
+import messagingService from '../../services/messagingService';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../config/firebase';
 
@@ -379,7 +380,15 @@ const ChatScreen: React.FC<{ route: RouteProp<any, any> }> = ({ route }) => {
           const receiverId = participants.find((p: string) => p !== user.uid);
           
           if (receiverId) {
-            await sendChatMessage(chatId, user.uid, receiverId, message.trim());
+            // Use the new messaging service that handles background notifications
+            await messagingService.sendMessage(
+              chatId,
+              user.uid,
+              receiverId,
+              message.trim(),
+              user.displayName || user.email || 'User',
+              'buyer' // Default to buyer role, could be enhanced to detect actual role
+            );
             
             // Mark messages as read after sending (this will clear unread badges)
             await markMessagesAsRead(chatId, user.uid);

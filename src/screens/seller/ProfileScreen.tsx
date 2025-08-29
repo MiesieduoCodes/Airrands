@@ -88,7 +88,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     };
   }, [locationSubscription]);
 
-  const navigateToScreen = (screenName: 'HelpCenter' | 'Feedback' | 'TermsOfService' | 'PrivacyPolicy' | 'DeactivateAccount') => {
+  const navigateToScreen = (screenName: 'HelpCenter' | 'Feedback' | 'SupportMessage' | 'TermsOfService' | 'PrivacyPolicy' | 'DeactivateAccount') => {
     navigation.navigate(screenName);
   };
 
@@ -579,6 +579,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               titleStyle={{ color: theme.colors.onSurface }}
               left={props => <List.Icon {...props} icon="help-circle" color={theme.colors.primary} />}
               onPress={() => navigateToScreen('HelpCenter')}
+            />
+            
+            <List.Item
+              title="Contact Support"
+              titleStyle={{ color: theme.colors.onSurface }}
+              left={props => <List.Icon {...props} icon="headset" color={theme.colors.primary} />}
+              onPress={() => navigateToScreen('SupportMessage')}
             />
             
             <List.Item

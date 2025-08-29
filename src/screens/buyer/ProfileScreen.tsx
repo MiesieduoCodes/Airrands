@@ -412,21 +412,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const handleViewOrderHistory = () => navigation.navigate('Orders');
   const handleContactSupport = async () => {
     try {
-      // For support chat, we'll use a special support user ID
-      // In a real app, this would be a dedicated support user or system
-      const supportUserId = 'support_system'; // This should be configured in your app
-      
-      const { getOrCreateChat } = await import('../../services/chatService');
-      const chatResult = await getOrCreateChat(supportUserId);
-      
-      navigation.navigate('Chat', {
-        chatId: chatResult.chatId,
-        chatName: 'Support',
-        chatAvatar: '',
-        chatRole: 'support',
-      });
+      if (!user) {
+        Alert.alert('Error', 'You must be logged in to contact support.');
+        return;
+      }
+
+      // Navigate to support message screen
+      navigation.navigate('SupportMessage');
     } catch (error) {
-      console.error('Error creating support chat:', error);
+      console.error('Error contacting support:', error);
       Alert.alert('Error', 'Failed to contact support. Please try again.');
     }
   };

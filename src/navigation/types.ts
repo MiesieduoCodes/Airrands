@@ -91,6 +91,7 @@ export type SharedStackParamList = {
   Runners: undefined;
   HelpCenter: undefined;
   Feedback: undefined;
+  SupportMessage: undefined;
   TermsOfService: undefined;
   PrivacyPolicy: undefined;
   DeactivateAccount: undefined;
@@ -175,6 +176,7 @@ export type RootStackParamList = {
   };
   HelpCenter: undefined;
   Feedback: undefined;
+  SupportMessage: undefined;
   TermsOfService: undefined;
   PrivacyPolicy: undefined;
   DeactivateAccount: undefined;
@@ -188,13 +190,13 @@ export type RootStackParamList = {
 export type AuthNavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 export type RootNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 export type BuyerNavigationProp = BottomTabNavigationProp<BuyerTabParamList> & {
-  navigate: (screen: keyof BuyerTabParamList | 'Chat' | 'OrderTracking' | 'Checkout' | 'SellerProfile' | 'RunnerProfile' | 'Stores' | 'Runners' | 'HelpCenter' | 'Feedback' | 'TermsOfService' | 'PrivacyPolicy' | 'DeactivateAccount' | 'ProductDetail' | 'ReviewSubmission' | 'NotificationTester', params?: any) => void;
+  navigate: (screen: keyof BuyerTabParamList | 'Chat' | 'OrderTracking' | 'Checkout' | 'SellerProfile' | 'RunnerProfile' | 'Stores' | 'Runners' | 'HelpCenter' | 'Feedback' | 'SupportMessage' | 'TermsOfService' | 'PrivacyPolicy' | 'DeactivateAccount' | 'ProductDetail' | 'ReviewSubmission' | 'NotificationTester', params?: any) => void;
 };
 export type SellerNavigationProp = BottomTabNavigationProp<SellerTabParamList> & {
-  navigate: (screen: keyof SellerTabParamList | 'Chat' | 'HelpCenter' | 'Feedback' | 'TermsOfService' | 'PrivacyPolicy' | 'DeactivateAccount' | 'ProductDetail' | 'Verification' | 'ReviewSubmission' | 'OrderTracking', params?: any) => void;
+  navigate: (screen: keyof SellerTabParamList | 'Chat' | 'HelpCenter' | 'Feedback' | 'SupportMessage' | 'TermsOfService' | 'PrivacyPolicy' | 'DeactivateAccount' | 'ProductDetail' | 'Verification' | 'ReviewSubmission' | 'OrderTracking', params?: any) => void;
 };
 export type RunnerNavigationProp = BottomTabNavigationProp<RunnerTabParamList> & {
-  navigate: (screen: keyof RunnerTabParamList | 'Chat' | 'HelpCenter' | 'Feedback' | 'TermsOfService' | 'PrivacyPolicy' | 'DeactivateAccount' | 'ProductDetail' | 'Verification' | 'ReviewSubmission' | 'RunnerTrackingScreen', params?: any) => void;
+  navigate: (screen: keyof RunnerTabParamList | 'Chat' | 'HelpCenter' | 'Feedback' | 'SupportMessage' | 'TermsOfService' | 'PrivacyPolicy' | 'DeactivateAccount' | 'ProductDetail' | 'Verification' | 'ReviewSubmission' | 'RunnerTrackingScreen', params?: any) => void;
 }; 
 
 // Navigator component prop types

@@ -22,7 +22,7 @@ import { COLORS } from '../constants/colors';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import * as Location from 'expo-location';
-import { haversineDistance } from '../utils/distance';
+import { haversineDistance, geocodeLocation, isWithinNigeria, calculateDistanceAndPrice } from '../utils/distance';
 import { db } from '../config/firebase';
 import firebase from 'firebase/compat/app';
 import { useAuth } from '../contexts/AuthContext';
@@ -216,21 +216,27 @@ const ErrandRequestModal: React.FC<ErrandRequestModalProps> = ({
     }
 
     try {
-      // Get coordinates for both locations
-      const [pickupResults, dropoffResults] = await Promise.all([
-        Location.geocodeAsync(errandData.pickupLocation),
-        Location.geocodeAsync(errandData.dropoffLocation),
+      // Get coordinates for both locations using enhanced geocoding
+      const [pickupCoords, dropoffCoords] = await Promise.all([
+        geocodeLocation(errandData.pickupLocation),
+        geocodeLocation(errandData.dropoffLocation),
       ]);
 
-      const pickupCoordinates = pickupResults?.[0] ? {
-        latitude: pickupResults[0].latitude,
-        longitude: pickupResults[0].longitude,
-      } : null;
+      if (!pickupCoords || !dropoffCoords) {
+        setSnackbarMessage('Could not find coordinates for one or both locations. Please check the addresses.');
+        setSnackbarVisible(true);
+        return false;
+      }
 
-      const dropoffCoordinates = dropoffResults?.[0] ? {
-        latitude: dropoffResults[0].latitude,
-        longitude: dropoffResults[0].longitude,
-      } : null;
+      const pickupCoordinates = {
+        latitude: pickupCoords.latitude,
+        longitude: pickupCoords.longitude,
+      };
+
+      const dropoffCoordinates = {
+        latitude: dropoffCoords.latitude,
+        longitude: dropoffCoords.longitude,
+      };
 
       const errandDoc = {
         ...errandData,
@@ -274,45 +280,52 @@ const ErrandRequestModal: React.FC<ErrandRequestModalProps> = ({
       ) {
         setCalculating(true);
         try {
-          const [pickupResults, dropoffResults] = await Promise.all([
-            Location.geocodeAsync(formData.pickupLocation),
-            Location.geocodeAsync(formData.dropoffLocation),
+          // Use enhanced geocoding function
+          const [pickupCoords, dropoffCoords] = await Promise.all([
+            geocodeLocation(formData.pickupLocation),
+            geocodeLocation(formData.dropoffLocation),
           ]);
           
-          if (pickupResults.length === 0 || dropoffResults.length === 0) {
-            setGeoError('Could not find one or both locations. Please check the addresses and try again.');
+          if (!pickupCoords || !dropoffCoords) {
+            let errorMessage = 'Could not find one or both locations. ';
+            if (!pickupCoords && !dropoffCoords) {
+              errorMessage += 'Please check both pickup and dropoff addresses. Try adding more specific details like street name, area, or landmark.';
+            } else if (!pickupCoords) {
+              errorMessage += 'Could not find pickup location. Please check the pickup address and try adding more specific details.';
+            } else {
+              errorMessage += 'Could not find dropoff location. Please check the dropoff address and try adding more specific details.';
+            }
+            setGeoError(errorMessage);
             setDistance(null);
             setFormData((prev) => ({ ...prev, budget: '' }));
             setCalculating(false);
             return;
           }
           
-          const pickup = pickupResults?.[0];
-          const dropoff = dropoffResults?.[0];
-          
-          // Validate coordinates are reasonable (within Nigeria bounds)
-          const isPickupValid = pickup?.latitude >= 4 && pickup?.latitude <= 14 && 
-                               pickup?.longitude >= 2 && pickup?.longitude <= 15;
-          const isDropoffValid = dropoff?.latitude >= 4 && dropoff?.latitude <= 14 && 
-                                dropoff?.longitude >= 2 && dropoff?.longitude <= 15;
+          // Validate coordinates are within Nigeria bounds
+          const isPickupValid = isWithinNigeria(pickupCoords.latitude, pickupCoords.longitude);
+          const isDropoffValid = isWithinNigeria(dropoffCoords.latitude, dropoffCoords.longitude);
           
           if (!isPickupValid || !isDropoffValid) {
-            setGeoError('Locations must be within Nigeria. Please check the addresses.');
+            setGeoError('Locations must be within Bayelsa State. Please check the addresses.');
             setDistance(null);
             setFormData((prev) => ({ ...prev, budget: '' }));
             setCalculating(false);
             return;
           }
           
+          // Calculate distance and price with enhanced validation
           const dist = haversineDistance(
-            pickup.latitude,
-            pickup.longitude,
-            dropoff.latitude,
-            dropoff.longitude
+            pickupCoords.latitude,
+            pickupCoords.longitude,
+            dropoffCoords.latitude,
+            dropoffCoords.longitude
           );
+          const price = Math.round(dist * 1000); // ₦1000 per km
+          const isValid = dist > 0 && dist <= 50; // Max 50km for errands
           
           // Validate reasonable distance (max 50km for errands)
-          if (dist > 50) {
+          if (!isValid) {
             setGeoError('Distance is too far (max 50km). Please choose closer locations.');
             setDistance(null);
             setFormData((prev) => ({ ...prev, budget: '' }));
@@ -321,9 +334,8 @@ const ErrandRequestModal: React.FC<ErrandRequestModalProps> = ({
           }
           
           setDistance(dist);
-          // Calculate price: 1km = ₦1000, minimum ₦500
-          const rawPrice = Math.max(500, Math.round(dist * 1000));
-          setFormData((prev) => ({ ...prev, budget: rawPrice.toString() }));
+          // Use calculated price from enhanced function
+          setFormData((prev) => ({ ...prev, budget: price.toString() }));
         } catch (e) {
           setGeoError('Failed to calculate distance. Please check your internet connection and try again.');
           setDistance(null);
@@ -502,7 +514,7 @@ const ErrandRequestModal: React.FC<ErrandRequestModalProps> = ({
                   mode="outlined"
                   style={styles.input}
                   error={!!errors?.pickupLocation}
-                  placeholder="e.g., Shoprite, Ikeja City Mall"
+                  placeholder="e.g., Yenagoa Main Market or 123 Okutukutu, Yenagoa"
                   outlineColor={theme.colors.outline}
                   activeOutlineColor={theme.colors.primary}
                   theme={{ 
@@ -525,7 +537,7 @@ const ErrandRequestModal: React.FC<ErrandRequestModalProps> = ({
                   mode="outlined"
                   style={styles.input}
                   error={!!errors?.dropoffLocation}
-                  placeholder="e.g., Home, Office, etc."
+                  placeholder="e.g., 456 Kpansia, Yenagoa or Niger Delta University, Amassoma"
                   outlineColor={theme.colors.outline}
                   activeOutlineColor={theme.colors.primary}
                   theme={{ 
@@ -539,6 +551,14 @@ const ErrandRequestModal: React.FC<ErrandRequestModalProps> = ({
                   }}
                   editable={!loading}
                 />
+
+                {/* Address Tips */}
+                <View style={styles.tipsContainer}>
+                  <MaterialCommunityIcons name="lightbulb-outline" size={16} color={theme.colors.primary} />
+                  <Text style={[styles.tipsText, { color: theme.colors.onSurfaceVariant }]}>
+                    Tip: Include street name, area, or landmark for better results (e.g., "123 Okutukutu, Yenagoa")
+                  </Text>
+                </View>
 
                 {/* Distance and Price Info */}
                 {calculating && (
@@ -757,6 +777,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+  },
+  tipsContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  tipsText: {
+    fontSize: 12,
+    marginLeft: 8,
+    flex: 1,
+    lineHeight: 16,
   },
 });
 

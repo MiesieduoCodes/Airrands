@@ -200,12 +200,12 @@ const SellerProfileScreen: React.FC<SellerProfileScreenProps> = ({ navigation, r
     
     try {
       // Create or get chat with seller
-      const { getOrCreateChat } = await import('../../services/chatService');
-      const chatResult = await getOrCreateChat(seller.id);
+      const messagingService = await import('../../services/messagingService');
+      const { chatId, isNew } = await messagingService.default.getOrCreateChat(user.uid, seller.id);
       
       // Navigate to chat with seller
       navigation.navigate('Chat', { 
-        chatId: chatResult.chatId,
+        chatId,
         chatName: seller.name,
         chatAvatar: seller.image,
         chatRole: 'seller'

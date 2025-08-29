@@ -96,8 +96,8 @@ const RunnerProfileScreen: React.FC<RunnerProfileScreenProps> = ({ navigation, r
     if (!runner || !user?.uid) return;
     
     try {
-      const { getOrCreateChat } = await import('../../services/chatService');
-      const { chatId, isNew } = await getOrCreateChat(runner.id);
+      const messagingService = await import('../../services/messagingService');
+      const { chatId, isNew } = await messagingService.default.getOrCreateChat(user.uid, runner.id);
       
       navigation.navigate('Chat', {
         chatId,
